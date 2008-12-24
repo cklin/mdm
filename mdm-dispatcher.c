@@ -1,3 +1,5 @@
+// Time-stamp: <2008-12-23 15:53:44 cklin>
+
 #include <sys/socket.h>
 #include <err.h>
 #include <unistd.h>
