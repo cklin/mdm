@@ -1,16 +1,18 @@
-// Time-stamp: <2008-12-23 15:53:34 cklin>
+// Time-stamp: <2008-12-23 18:12:57 cklin>
 
 #include <sys/types.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
+#include "bounds.h"
 #include "comms.h"
 
 extern char **environ;
 
 int main(int argc, char *argv[])
 {
-  char  buffer[4096];
+  char  buffer[MAX_ARG_SIZE];
+  char  *exec_argv[MAX_ARG_COUNT];
   int   cmdlen;
   int   commfd;
   int   status;
@@ -24,34 +26,17 @@ int main(int argc, char *argv[])
   write(commfd, &pid, sizeof (pid_t));
 
   for ( ; ; ) {
-    readn(commfd, &cmdlen, sizeof (int));
-    readn(commfd, buffer, cmdlen);
+    cmdlen = read_cmd(commfd, buffer);
+    cmd_pointers(buffer, cmdlen, exec_argv);
     if (cmdlen == 0)  break;
-
-    char *exec_argv[64];
-    int  aidx=0, bidx=0;
-
-    exec_argv[aidx++] = buffer;
-    while (bidx < cmdlen) {
-      if (buffer[bidx++])  continue;
-      exec_argv[aidx++] = buffer+bidx;
-    }
-    exec_argv[--aidx] = NULL;
-
-    printf("received command:");
-    for (aidx=0; exec_argv[aidx]; aidx++)
-      printf(" %s", exec_argv[aidx]);
-    printf("\n");
 
     pid = fork();
     if (pid == 0) {
       close(commfd);
       execve(buffer, exec_argv, environ);
     }
-
     wait(&status);
     write(commfd, &status, sizeof (int));
   }
-
   return 0;
 }
