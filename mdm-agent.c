@@ -1,9 +1,10 @@
-// Time-stamp: <2008-12-23 18:12:57 cklin>
+// Time-stamp: <2008-12-31 13:39:23 cklin>
 
 #include <sys/types.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 #include "bounds.h"
 #include "comms.h"
 
@@ -16,11 +17,19 @@ int main(int argc, char *argv[])
   int   cmdlen;
   int   commfd;
   int   status;
+  char  *sockdir;
+  char  sockaddr[MAX_PATH_SIZE];
   pid_t pid;
 
   if (argc != 2)
-    errx(1, "need server socket pathname argument");
-  commfd = cli_conn(argv[1]);
+    errx(1, "Need socket directory argument");
+  sockdir = argv[1];
+
+  if (check_sockdir(sockdir) < 0)
+    errx(2, "Socket directory failed validation");
+  strncpy(sockaddr, sockdir, sizeof (sockaddr));
+  strncat(sockaddr, CMD_SOCK, sizeof (sockaddr));
+  commfd = cli_conn(sockaddr);
 
   pid = getpid();
   write(commfd, &pid, sizeof (pid_t));

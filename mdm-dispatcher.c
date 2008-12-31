@@ -1,6 +1,8 @@
-// Time-stamp: <2008-12-23 21:39:56 cklin>
+// Time-stamp: <2008-12-31 13:39:31 cklin>
 
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -8,6 +10,7 @@
 #include <string.h>
 #include <time.h>
 #include "bounds.h"
+#include "comms.h"
 
 char *show_time(void)
 {
@@ -30,11 +33,19 @@ int main(int argc, char *argv[])
   bool   busy[AGENTS_COUNT];
   pid_t  pid;
   char   file[MAX_ARG_SIZE];
+  char   *sockdir;
+  char   sockaddr[MAX_PATH_SIZE];
   fd_set readfds;
 
   if (argc != 2)
-    errx(1, "need server socket pathname argument");
-  listenfd = serv_listen(argv[1]);
+    errx(1, "Need socket directory argument");
+  sockdir = argv[1];
+
+  if (check_sockdir(sockdir) < 0)
+    errx(2, "Socket directory failed validation");
+  strncpy(sockaddr, sockdir, sizeof (sockaddr));
+  strncat(sockaddr, CMD_SOCK, sizeof (sockaddr));
+  listenfd = serv_listen(sockaddr);
 
   setvbuf(stdout, NULL, _IONBF, 0);
 

@@ -1,6 +1,9 @@
-// Time-stamp: <2008-12-23 09:47:43 cklin>
+// Time-stamp: <2008-12-31 13:37:50 cklin>
 
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <err.h>
 #include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
@@ -132,4 +135,25 @@ int serv_accept(int listenfd)
   if (connfd < 0)
     warn("accept");
   return connfd;
+}
+
+// Basic security checks for the IPC directory
+
+int check_sockdir(const char *path)
+{
+  struct stat st;
+
+  if (lstat(path, &st) < 0) {
+    warn("stat(\"%s\")", path);
+    return -1;
+  }
+  if (! S_ISDIR(st.st_mode)) {
+    warnx("%s is not a directory", path);
+    return -2;
+  }
+  if (st.st_mode & S_IWOTH) {
+    warnx("%s is world-writable", path);
+    return -3;
+  }
+  return 0;
 }
