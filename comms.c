@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:59:52 cklin>
+// Time-stamp: <2008-12-31 14:04:41 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -7,6 +7,7 @@
 #include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
+#include "bounds.h"
 #include "comms.h"
 
 // Advanced Programming in the Unix Environment, Program 12.12
@@ -143,6 +144,8 @@ void check_sockdir(const char *path)
 {
   struct stat st;
 
+  if (strlen(path) > MAX_PATH_SIZE-20)
+    err(2, "Path %s is too long", path);
   if (lstat(path, &st) < 0)
     err(2, "stat(\"%s\")", path);
   if (! S_ISDIR(st.st_mode))
