@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 14:50:11 cklin>
+// Time-stamp: <2008-12-31 14:51:32 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
     busy[agent] = false;
   }
   close(listenfd);
-  unlink(argv[1]);
 
   char  *exec_argv[] =
     { "/usr/bin/lame", "--resample", "22.05",
