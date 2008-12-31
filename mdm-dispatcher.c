@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:39:31 cklin>
+// Time-stamp: <2008-12-31 13:49:23 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   pid_t  pid;
   char   file[MAX_ARG_SIZE];
   char   *sockdir;
-  char   sockaddr[MAX_PATH_SIZE];
+  char   cmdaddr[MAX_PATH_SIZE];
   fd_set readfds;
 
   if (argc != 2)
@@ -43,9 +43,9 @@ int main(int argc, char *argv[])
 
   if (check_sockdir(sockdir) < 0)
     errx(2, "Socket directory failed validation");
-  strncpy(sockaddr, sockdir, sizeof (sockaddr));
-  strncat(sockaddr, CMD_SOCK, sizeof (sockaddr));
-  listenfd = serv_listen(sockaddr);
+  strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
+  strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
+  listenfd = serv_listen(cmdaddr);
 
   setvbuf(stdout, NULL, _IONBF, 0);
 

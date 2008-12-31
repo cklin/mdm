@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:39:23 cklin>
+// Time-stamp: <2008-12-31 13:49:33 cklin>
 
 #include <sys/types.h>
 #include <err.h>
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   int   commfd;
   int   status;
   char  *sockdir;
-  char  sockaddr[MAX_PATH_SIZE];
+  char  cmdaddr[MAX_PATH_SIZE];
   pid_t pid;
 
   if (argc != 2)
@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
 
   if (check_sockdir(sockdir) < 0)
     errx(2, "Socket directory failed validation");
-  strncpy(sockaddr, sockdir, sizeof (sockaddr));
-  strncat(sockaddr, CMD_SOCK, sizeof (sockaddr));
-  commfd = cli_conn(sockaddr);
+  strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
+  strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
+  commfd = cli_conn(cmdaddr);
 
   pid = getpid();
   write(commfd, &pid, sizeof (pid_t));
