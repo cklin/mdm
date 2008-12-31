@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:53:43 cklin>
+// Time-stamp: <2008-12-31 13:58:57 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
     errx(1, "Need socket directory argument");
   sockdir = argv[1];
 
-  if (check_sockdir(sockdir) < 0)
-    errx(2, "Socket directory failed validation");
+  check_sockdir(sockdir);
   strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
   strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
   listenfd = serv_listen(cmdaddr);

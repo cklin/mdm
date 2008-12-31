@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:45:35 cklin>
+// Time-stamp: <2008-12-31 13:59:15 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -15,6 +15,6 @@ int serv_listen(const char *name);
 int cli_conn(const char *name);
 int serv_accept(int listenfd);
 
-int check_sockdir(const char *path);
+void check_sockdir(const char *path);
 
 #endif
