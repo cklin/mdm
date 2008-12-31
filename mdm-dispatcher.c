@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:58:57 cklin>
+// Time-stamp: <2008-12-31 14:50:11 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
   int    listenfd;
   int    retval, status;
   int    agent;
-  int    commfd[AGENTS_COUNT], maxfd;
-  bool   busy[AGENTS_COUNT];
+  int    commfd[MAX_AGENTS], maxfd;
+  bool   busy[MAX_AGENTS];
   pid_t  pid;
   char   file[MAX_ARG_SIZE];
   char   *sockdir;
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   if (log == NULL)  err(3, "Log file %s", logaddr);
   setvbuf(log, NULL, _IONBF, 0);
 
-  for (agent=0, maxfd=0; agent<AGENTS_COUNT; agent++) {
+  for (agent=0, maxfd=0; agent<MAX_AGENTS; agent++) {
     fprintf(log, "%s [%d] waiting... ", show_time(), agent);
     commfd[agent] = serv_accept(listenfd);
     read(commfd[agent], &pid, sizeof (pid_t));
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       "-m", "m", "-V", "6", file, NULL };
 
   for ( ; ; ) {
-    for (agent=0; agent<AGENTS_COUNT; agent++) {
+    for (agent=0; agent<MAX_AGENTS; agent++) {
       if (busy[agent])  continue;
       if (!fgets(file, MAX_ARG_SIZE, stdin))  continue;
       if (file[strlen(file)-1] == '\n')
@@ -80,17 +80,17 @@ int main(int argc, char *argv[])
       busy[agent] = true;
     }
 
-    for (agent=0; agent<AGENTS_COUNT; agent++)
+    for (agent=0; agent<MAX_AGENTS; agent++)
       if (busy[agent])  break;
-    if (agent == AGENTS_COUNT)  break;
+    if (agent == MAX_AGENTS)  break;
 
     FD_ZERO(&readfds);
-    for (agent=0; agent<AGENTS_COUNT; agent++)
+    for (agent=0; agent<MAX_AGENTS; agent++)
       FD_SET(commfd[agent], &readfds);
     retval = select(maxfd+1, &readfds, NULL, NULL, NULL);
     if (retval < 0)  err(4, "select");
 
-    for (agent=0; agent<AGENTS_COUNT; agent++)
+    for (agent=0; agent<MAX_AGENTS; agent++)
       if (FD_ISSET(commfd[agent], &readfds)) {
         if (!busy[agent])
           errx(5, "agent %d protocol error", agent);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
   }
 
   status = 0;
-  for (agent=0; agent<AGENTS_COUNT; agent++)
+  for (agent=0; agent<MAX_AGENTS; agent++)
     write(commfd[agent], &status, sizeof (int));
 
   return 0;
