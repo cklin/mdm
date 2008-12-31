@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:49:23 cklin>
+// Time-stamp: <2008-12-31 13:53:43 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
   char   file[MAX_ARG_SIZE];
   char   *sockdir;
   char   cmdaddr[MAX_PATH_SIZE];
+  char   logaddr[MAX_PATH_SIZE];
+  FILE   *log;
   fd_set readfds;
 
   if (argc != 2)
@@ -47,13 +49,17 @@ int main(int argc, char *argv[])
   strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
   listenfd = serv_listen(cmdaddr);
 
-  setvbuf(stdout, NULL, _IONBF, 0);
+  strncpy(logaddr, sockdir, sizeof (logaddr));
+  strncat(logaddr, LOG_FILE, sizeof (logaddr));
+  log = fopen(logaddr, "w+");
+  if (log == NULL)  err(3, "Log file %s", logaddr);
+  setvbuf(log, NULL, _IONBF, 0);
 
   for (agent=0, maxfd=0; agent<AGENTS_COUNT; agent++) {
-    printf("%s [%d] waiting... ", show_time(), agent);
+    fprintf(log, "%s [%d] waiting... ", show_time(), agent);
     commfd[agent] = serv_accept(listenfd);
     read(commfd[agent], &pid, sizeof (pid_t));
-    printf("online! pid=%d\n", pid);
+    fprintf(log, "online! pid=%d\n", pid);
     if (commfd[agent] > maxfd)  maxfd = commfd[agent];
     busy[agent] = false;
   }
@@ -70,7 +76,7 @@ int main(int argc, char *argv[])
       if (!fgets(file, MAX_ARG_SIZE, stdin))  continue;
       if (file[strlen(file)-1] == '\n')
         file[strlen(file)-1] = '\0';
-      printf("%s [%d] %s\n", show_time(), agent, file);
+      fprintf(log, "%s [%d] %s\n", show_time(), agent, file);
       write_cmd(commfd[agent], exec_argv);
       busy[agent] = true;
     }
@@ -83,15 +89,15 @@ int main(int argc, char *argv[])
     for (agent=0; agent<AGENTS_COUNT; agent++)
       FD_SET(commfd[agent], &readfds);
     retval = select(maxfd+1, &readfds, NULL, NULL, NULL);
-    if (retval < 0)  err(2, "select");
+    if (retval < 0)  err(4, "select");
 
     for (agent=0; agent<AGENTS_COUNT; agent++)
       if (FD_ISSET(commfd[agent], &readfds)) {
         if (!busy[agent])
-          errx(3, "agent %d protocol error", agent);
+          errx(5, "agent %d protocol error", agent);
         read(commfd[agent], &status, sizeof (int));
-        printf("%s [%d] done, status %d\n",
-               show_time(), agent, status);
+        fprintf(log, "%s [%d] done, status %d\n",
+                show_time(), agent, status);
         busy[agent] = false;
       }
   }
