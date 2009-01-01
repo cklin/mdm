@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 00:19:30 cklin>
+// Time-stamp: <2009-01-01 12:46:43 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -20,20 +20,21 @@ extern char **environ;
 
 int main(int argc, char *argv[])
 {
-  int    listenfd;
-  int    retval, status;
-  int    agent, nagents;
-  int    commfd[MAX_AGENTS], maxfd;
-  bool   busy[MAX_AGENTS];
-  pid_t  pid;
-  char   file[MAX_ARG_SIZE];
-  char   *sockdir;
-  char   *cwd;
-  char   cmdaddr[MAX_PATH_SIZE];
-  char   logaddr[MAX_PATH_SIZE];
-  FILE   *log;
-  fd_set readfds;
-  bool   wind_down;
+  const int zero = 0, one = 1;
+  int       listenfd;
+  int       retval, status;
+  int       agent, nagents;
+  int       commfd[MAX_AGENTS], maxfd;
+  bool      busy[MAX_AGENTS];
+  pid_t     pid;
+  char      file[MAX_ARG_SIZE];
+  char      *sockdir;
+  char      *cwd;
+  char      cmdaddr[MAX_PATH_SIZE];
+  char      logaddr[MAX_PATH_SIZE];
+  FILE      *log;
+  fd_set    readfds;
+  bool      wind_down;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -71,10 +72,11 @@ int main(int argc, char *argv[])
         if (file[strlen(file)-1] == '\n')
           file[strlen(file)-1] = '\0';
         fprintf(log, "[%d] %s\n", agent, file);
-        write_args(commfd[agent], (const char **) exec_argv);
-        write_args(commfd[agent], (const char **) environ);
+        write(commfd[agent], &one, sizeof (int));
         cwd = (char *) get_current_dir_name();
         write_string(commfd[agent], cwd);
+        write_args(commfd[agent], (const char **) exec_argv);
+        write_args(commfd[agent], (const char **) environ);
         free(cwd);
         busy[agent] = true;
       }
@@ -82,8 +84,7 @@ int main(int argc, char *argv[])
     for (agent=0; agent<MAX_AGENTS; agent++) {
       if (! FD_AGENT(commfd[agent]))  continue;
       if (busy[agent])  continue;
-      status = 0;
-      write(commfd[agent], &status, sizeof (int));
+      write(commfd[agent], &zero, sizeof (int));
       close(commfd[agent]);
       commfd[agent] = -1;
       nagents--;

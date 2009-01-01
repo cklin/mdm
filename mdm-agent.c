@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 00:13:56 cklin>
+// Time-stamp: <2009-01-01 12:49:27 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 {
   struct argv cmd, env;
   char        cwd[MAX_ARG_SIZE];
-  int         cmd_len;
+  int         op;
   int         comm_fd, initwd_fd;
   int         status;
   pid_t       pid;
@@ -38,10 +38,11 @@ int main(int argc, char *argv[])
   write(comm_fd, &pid, sizeof (pid_t));
 
   for ( ; ; ) {
-    cmd_len = read_args(comm_fd, &cmd);
-    if (cmd_len == 0)  break;
-    read_args(comm_fd, &env);
+    readn(comm_fd, &op, sizeof (int));
+    if (op == 0)  break;
     read_block(comm_fd, cwd);
+    read_args(comm_fd, &cmd);
+    read_args(comm_fd, &env);
 
     pid = fork();
     if (pid == 0) {
