@@ -2,3 +2,4 @@ syntax: glob
 *.o
 mdm-agent
 mdm-dispatcher
+mdm-liason
