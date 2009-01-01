@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 12:46:43 cklin>
+// Time-stamp: <2009-01-01 14:44:37 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -18,9 +18,29 @@ extern char **environ;
 
 #define FD_AGENT(fd) ((fd) != -1)
 
+void issue(int agent_fd, char *file)
+{
+  const int one = 1;
+  int       last;
+  char      *cwd;
+  char      *cmd[] =
+    { "/usr/bin/lame", "--resample", "22.05",
+      "-m", "m", "-V", "6", file, NULL };
+
+  last = strlen(file)-1;
+  if (file[last] == '\n')  file[last] = '\0';
+
+  cwd = (char *) get_current_dir_name();
+  writen(agent_fd, &one, sizeof (int));
+  write_string(agent_fd, cwd);
+  write_args(agent_fd, (const char **) cmd);
+  write_args(agent_fd, (const char **) environ);
+  free(cwd);
+}
+
 int main(int argc, char *argv[])
 {
-  const int zero = 0, one = 1;
+  const int zero = 0;
   int       listenfd;
   int       retval, status;
   int       agent, nagents;
@@ -29,7 +49,6 @@ int main(int argc, char *argv[])
   pid_t     pid;
   char      file[MAX_ARG_SIZE];
   char      *sockdir;
-  char      *cwd;
   char      cmdaddr[MAX_PATH_SIZE];
   char      logaddr[MAX_PATH_SIZE];
   FILE      *log;
@@ -55,10 +74,6 @@ int main(int argc, char *argv[])
   for (agent=0; agent<MAX_AGENTS; agent++)
     commfd[agent] = -1;
 
-  char  *exec_argv[] =
-    { "/usr/bin/lame", "--resample", "22.05",
-      "-m", "m", "-V", "6", file, NULL };
-
   wind_down = false;
   for ( ; ; ) {
     if (! wind_down)
@@ -69,15 +84,8 @@ int main(int argc, char *argv[])
           wind_down = true;
           break;
         }
-        if (file[strlen(file)-1] == '\n')
-          file[strlen(file)-1] = '\0';
+        issue(commfd[agent], file);
         fprintf(log, "[%d] %s\n", agent, file);
-        write(commfd[agent], &one, sizeof (int));
-        cwd = (char *) get_current_dir_name();
-        write_string(commfd[agent], cwd);
-        write_args(commfd[agent], (const char **) exec_argv);
-        write_args(commfd[agent], (const char **) environ);
-        free(cwd);
         busy[agent] = true;
       }
 
