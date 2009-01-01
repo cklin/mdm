@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 17:11:29 cklin>
+// Time-stamp: <2008-12-31 17:36:52 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -11,6 +11,8 @@
 #include <time.h>
 #include "bounds.h"
 #include "comms.h"
+
+extern char **environ;
 
 #define FD_AGENT(fd) ((fd) != -1)
 
@@ -67,6 +69,7 @@ int main(int argc, char *argv[])
           file[strlen(file)-1] = '\0';
         fprintf(log, "[%d] %s\n", agent, file);
         write_cmd(commfd[agent], exec_argv);
+        write_cmd(commfd[agent], environ);
         busy[agent] = true;
       }
 

@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 13:59:09 cklin>
+// Time-stamp: <2008-12-31 17:36:14 cklin>
 
 #include <sys/types.h>
 #include <err.h>
@@ -8,13 +8,13 @@
 #include "bounds.h"
 #include "comms.h"
 
-extern char **environ;
-
 int main(int argc, char *argv[])
 {
-  char  buffer[MAX_ARG_SIZE];
-  char  *exec_argv[MAX_ARG_COUNT];
-  int   cmdlen;
+  char  cmd_buf[MAX_ARG_SIZE];
+  char  env_buf[MAX_ARG_SIZE];
+  char  *exec_cmd[MAX_ARG_COUNT];
+  char  *exec_env[MAX_ARG_COUNT];
+  int   cmdlen, envlen;
   int   commfd;
   int   status;
   char  *sockdir;
@@ -34,14 +34,16 @@ int main(int argc, char *argv[])
   write(commfd, &pid, sizeof (pid_t));
 
   for ( ; ; ) {
-    cmdlen = read_cmd(commfd, buffer);
-    cmd_pointers(buffer, cmdlen, exec_argv);
+    cmdlen = read_cmd(commfd, cmd_buf);
     if (cmdlen == 0)  break;
+    cmd_pointers(cmd_buf, cmdlen, exec_cmd);
+    envlen = read_cmd(commfd, env_buf);
+    cmd_pointers(env_buf, envlen, exec_env);
 
     pid = fork();
     if (pid == 0) {
       close(commfd);
-      execve(buffer, exec_argv, environ);
+      execve(exec_cmd[0], exec_cmd, exec_env);
     }
     wait(&status);
     write(commfd, &status, sizeof (int));
