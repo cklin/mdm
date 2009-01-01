@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 14:04:41 cklin>
+// Time-stamp: <2009-01-01 11:43:33 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -23,13 +23,13 @@ ssize_t writen(int fd, const void *vptr, size_t n)
   while (remaining > 0) {
     written = write(fd, ptr, remaining);
     if (written <= 0) {
-      warn("write");
+      if (written < 0)  warn("write");
       return written;
     }
     remaining -= written;
     ptr += written;
   }
-  return 0;
+  return n;
 }
 
 // Advanced Programming in the Unix Environment, Program 12.13
@@ -45,13 +45,13 @@ ssize_t readn(int fd, void *vptr, size_t n)
   while (remaining > 0) {
     received = read(fd, ptr, remaining);
     if (received <= 0) {
-      warn("read");
+      if (received < 0)  warn("read");
       return received;
     }
     remaining -= received;
     ptr += received;
   }
-  return 0;
+  return n;
 }
 
 // Advanced Programming in the Unix Environment, Program 15.22
