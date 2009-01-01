@@ -1,7 +1,9 @@
-// Time-stamp: <2008-12-31 18:33:52 cklin>
+// Time-stamp: <2009-01-01 13:09:59 cklin>
 
 #ifndef __CMDLINE_H__
 #define __CMDLINE_H__
+
+#include "bounds.h"
 
 struct argv {
   char buffer[MAX_ARG_SIZE];
