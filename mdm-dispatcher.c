@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 14:44:37 cklin>
+// Time-stamp: <2009-01-01 14:57:34 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -30,7 +30,7 @@ void issue(int agent_fd, char *file)
   last = strlen(file)-1;
   if (file[last] == '\n')  file[last] = '\0';
 
-  cwd = (char *) get_current_dir_name();
+  cwd = get_current_dir_name();
   writen(agent_fd, &one, sizeof (int));
   write_string(agent_fd, cwd);
   write_args(agent_fd, (const char **) cmd);

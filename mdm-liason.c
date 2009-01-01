@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 13:39:50 cklin>
+// Time-stamp: <2009-01-01 14:57:47 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   if (cmd_fd < 0)
     err(5, "Cannot open %s", *argv);
 
-  cwd = (char *) get_current_dir_name();
+  cwd = get_current_dir_name();
   write_string(cmd_fd, cwd);
   write_args(cmd_fd, (const char **) ++argv);
   write_args(cmd_fd, (const char **) environ);
