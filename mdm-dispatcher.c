@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 17:36:52 cklin>
+// Time-stamp: <2008-12-31 18:20:53 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -11,6 +11,7 @@
 #include <time.h>
 #include "bounds.h"
 #include "comms.h"
+#include "cmdline.h"
 
 extern char **environ;
 
@@ -68,8 +69,8 @@ int main(int argc, char *argv[])
         if (file[strlen(file)-1] == '\n')
           file[strlen(file)-1] = '\0';
         fprintf(log, "[%d] %s\n", agent, file);
-        write_cmd(commfd[agent], exec_argv);
-        write_cmd(commfd[agent], environ);
+        write_args(commfd[agent], (const char **) exec_argv);
+        write_args(commfd[agent], (const char **) environ);
         busy[agent] = true;
       }
 

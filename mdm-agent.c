@@ -1,52 +1,52 @@
-// Time-stamp: <2008-12-31 17:36:14 cklin>
+// Time-stamp: <2008-12-31 18:23:05 cklin>
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include "bounds.h"
 #include "comms.h"
+#include "cmdline.h"
+
+int hookup(const char path[])
+{
+  char addr[MAX_PATH_SIZE];
+
+  check_sockdir(path);
+  strncpy(addr, path, sizeof (addr));
+  strncat(addr, CMD_SOCK, sizeof (addr));
+  return cli_conn(addr);
+}
 
 int main(int argc, char *argv[])
 {
-  char  cmd_buf[MAX_ARG_SIZE];
-  char  env_buf[MAX_ARG_SIZE];
-  char  *exec_cmd[MAX_ARG_COUNT];
-  char  *exec_env[MAX_ARG_COUNT];
-  int   cmdlen, envlen;
-  int   commfd;
-  int   status;
-  char  *sockdir;
-  char  cmdaddr[MAX_PATH_SIZE];
-  pid_t pid;
+  struct argv cmd, env;
+  int         cmd_len;
+  int         comm_fd;
+  int         status;
+  pid_t       pid;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
-  sockdir = argv[1];
 
-  check_sockdir(sockdir);
-  strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
-  strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
-  commfd = cli_conn(cmdaddr);
-
+  comm_fd = hookup(argv[1]);
   pid = getpid();
-  write(commfd, &pid, sizeof (pid_t));
+  write(comm_fd, &pid, sizeof (pid_t));
 
   for ( ; ; ) {
-    cmdlen = read_cmd(commfd, cmd_buf);
-    if (cmdlen == 0)  break;
-    cmd_pointers(cmd_buf, cmdlen, exec_cmd);
-    envlen = read_cmd(commfd, env_buf);
-    cmd_pointers(env_buf, envlen, exec_env);
+    cmd_len = read_args(comm_fd, &cmd);
+    if (cmd_len == 0)  break;
+    read_args(comm_fd, &env);
 
     pid = fork();
     if (pid == 0) {
-      close(commfd);
-      execve(exec_cmd[0], exec_cmd, exec_env);
+      close(comm_fd);
+      execve(cmd.args[0], cmd.args, env.args);
     }
     wait(&status);
-    write(commfd, &status, sizeof (int));
+    write(comm_fd, &status, sizeof (int));
   }
   return 0;
 }

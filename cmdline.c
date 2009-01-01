@@ -1,35 +1,46 @@
-// Time-stamp: <2008-12-23 18:05:04 cklin>
+// Time-stamp: <2008-12-31 18:09:36 cklin>
 
 #include <err.h>
 #include <unistd.h>
 #include <string.h>
 #include "bounds.h"
 #include "comms.h"
+#include "cmdline.h"
 
-int write_cmd(int fd, const char *cmd[])
+int write_args(int fd, const char *args[])
 {
   int index, size;
 
-  for (index=0, size=0; cmd[index]; index++, size++)
-    size += strlen(cmd[index]);
+  for (index=0, size=0; args[index]; index++, size++)
+    size += strlen(args[index]);
   if (size > MAX_ARG_SIZE) {
-    warnx("write_cmd: cmd (%d bytes) is too big", size);
+    warnx("write_args: args (%d bytes) is too long", size);
     return -1;
   }
 
   writen(fd, &size, sizeof (int));
-  for (index=0; cmd[index]; index++)
-    writen(fd, cmd[index], strlen(cmd[index])+1);
+  for (index=0; args[index]; index++)
+    writen(fd, args[index], strlen(args[index])+1);
   return 0;
 }
 
-int read_cmd(int fd, char buffer[])
+int read_args(int fd, struct argv *args)
+{
+  int size;
+
+  size = read_block(fd, args->buffer);
+  if (size > 0)
+    unpack_args(args->buffer, size, args->args);
+  return size;
+}
+
+int read_block(int fd, char buffer[])
 {
   int size = 0;
 
   readn(fd, &size, sizeof (int));
   if (size > MAX_ARG_SIZE) {
-    warnx("read_cmd: input (%d bytes) is too big", size);
+    warnx("read_block: input (%d bytes) is too big", size);
     while (size > MAX_ARG_SIZE) {
       readn(fd, &buffer, MAX_ARG_SIZE);
       size -= MAX_ARG_SIZE;
@@ -38,13 +49,13 @@ int read_cmd(int fd, char buffer[])
   }
   readn(fd, buffer, size);
   if (buffer[size-1]) {
-    warnx("read_cmd: input is not null-terminated");
+    warnx("read_block: input is not null-terminated");
     return -2;
   }
   return size;
 }
 
-int cmd_pointers(char buffer[], int size, char *args[])
+int unpack_args(char buffer[], int size, char *args[])
 {
   int index, arg;
 
@@ -52,7 +63,7 @@ int cmd_pointers(char buffer[], int size, char *args[])
   args[arg++] = buffer;
   while (index < size) {
     if (arg >= MAX_ARG_COUNT) {
-      warnx("cmd_pointers: too many arguments");
+      warnx("unpack_args: too many segments");
       return -1;
     }
     if (buffer[index++])  continue;
