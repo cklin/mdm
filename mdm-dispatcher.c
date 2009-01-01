@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 16:54:38 cklin>
+// Time-stamp: <2008-12-31 17:11:29 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
   char   logaddr[MAX_PATH_SIZE];
   FILE   *log;
   fd_set readfds;
+  bool   wind_down;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -52,23 +53,33 @@ int main(int argc, char *argv[])
     { "/usr/bin/lame", "--resample", "22.05",
       "-m", "m", "-V", "6", file, NULL };
 
+  wind_down = false;
   for ( ; ; ) {
-    for (agent=0; agent<MAX_AGENTS; agent++) {
-      if (! FD_AGENT(commfd[agent]))  continue;
-      if (busy[agent])  continue;
-      if (!fgets(file, MAX_ARG_SIZE, stdin))  continue;
-      if (file[strlen(file)-1] == '\n')
-        file[strlen(file)-1] = '\0';
-      fprintf(log, "[%d] %s\n", agent, file);
-      write_cmd(commfd[agent], exec_argv);
-      busy[agent] = true;
-    }
+    if (! wind_down)
+      for (agent=0; agent<MAX_AGENTS; agent++) {
+        if (! FD_AGENT(commfd[agent]))  continue;
+        if (busy[agent])  continue;
+        if (!fgets(file, MAX_ARG_SIZE, stdin)) {
+          wind_down = true;
+          break;
+        }
+        if (file[strlen(file)-1] == '\n')
+          file[strlen(file)-1] = '\0';
+        fprintf(log, "[%d] %s\n", agent, file);
+        write_cmd(commfd[agent], exec_argv);
+        busy[agent] = true;
+      }
 
     for (agent=0; agent<MAX_AGENTS; agent++) {
       if (! FD_AGENT(commfd[agent]))  continue;
-      if (busy[agent])  break;
+      if (busy[agent])  continue;
+      status = 0;
+      write(commfd[agent], &status, sizeof (int));
+      close(commfd[agent]);
+      commfd[agent] = -1;
+      nagents--;
     }
-    if (nagents > 0 && agent == MAX_AGENTS)  break;
+    if (wind_down && nagents == 0)  break;
 
     FD_ZERO(&readfds);
     FD_SET(listenfd, &readfds);
@@ -112,12 +123,6 @@ int main(int argc, char *argv[])
       busy[agent] = false;
       nagents++;
     }
-  }
-
-  status = 0;
-  for (agent=0; agent<MAX_AGENTS; agent++) {
-    if (! FD_AGENT(commfd[agent]))  continue;
-    write(commfd[agent], &status, sizeof (int));
   }
 
   return 0;
