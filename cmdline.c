@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 18:09:36 cklin>
+// Time-stamp: <2008-12-31 18:33:28 cklin>
 
 #include <err.h>
 #include <unistd.h>
@@ -31,6 +31,16 @@ int read_args(int fd, struct argv *args)
   size = read_block(fd, args->buffer);
   if (size > 0)
     unpack_args(args->buffer, size, args->args);
+  return size;
+}
+
+int write_string(int fd, const char buffer[])
+{
+  int size;
+
+  size = strlen(buffer)+1;
+  writen(fd, &size, sizeof (int));
+  writen(fd, buffer, size);
   return size;
 }
 

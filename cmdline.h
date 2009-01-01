@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 18:06:40 cklin>
+// Time-stamp: <2008-12-31 18:33:52 cklin>
 
 #ifndef __CMDLINE_H__
 #define __CMDLINE_H__
@@ -11,6 +11,7 @@ struct argv {
 int write_args(int fd, const char *args[]);
 int read_args(int fd, struct argv *args);
 
+int write_string(int fd, const char buffer[]);
 int read_block(int fd, char buffer[]);
 int unpack_args(char buffer[], int size, char *args[]);
 

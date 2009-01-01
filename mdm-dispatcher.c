@@ -1,4 +1,4 @@
-// Time-stamp: <2008-12-31 18:20:53 cklin>
+// Time-stamp: <2009-01-01 00:19:30 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "bounds.h"
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
   pid_t  pid;
   char   file[MAX_ARG_SIZE];
   char   *sockdir;
+  char   *cwd;
   char   cmdaddr[MAX_PATH_SIZE];
   char   logaddr[MAX_PATH_SIZE];
   FILE   *log;
@@ -71,6 +73,9 @@ int main(int argc, char *argv[])
         fprintf(log, "[%d] %s\n", agent, file);
         write_args(commfd[agent], (const char **) exec_argv);
         write_args(commfd[agent], (const char **) environ);
+        cwd = (char *) get_current_dir_name();
+        write_string(commfd[agent], cwd);
+        free(cwd);
         busy[agent] = true;
       }
 
