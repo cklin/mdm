@@ -1,0 +1,4 @@
+syntax: glob
+*.o
+mdm-agent
+mdm-dispatcher
