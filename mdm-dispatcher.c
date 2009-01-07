@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:21:57 cklin>
+// Time-stamp: <2009-01-06 20:29:06 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
 {
   const int zero = 0;
   int       listenfd;
-  int       retval;
   int       worker;
   int       maxfd;
   char      file[MAX_ARG_SIZE];
@@ -121,8 +120,8 @@ int main(int argc, char *argv[])
       FD_SET(workers[worker], &readfds);
       if (workers[worker] > maxfd)  maxfd = workers[worker];
     }
-    retval = select(maxfd+1, &readfds, NULL, NULL, NULL);
-    if (retval < 0)  err(4, "select");
+    if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
+      err(4, "select");
 
     for (worker=busy-1; worker>=0; worker--)
       if (FD_ISSET(workers[worker], &readfds))
@@ -130,13 +129,12 @@ int main(int argc, char *argv[])
 
     for (worker=ready-1; worker>=busy; worker--) {
       int status;
-      retval = read(workers[worker], &status, sizeof (int));
-      if (retval == 0) {
+      if (readn(workers[worker], &status, sizeof (int)))
+        fprintf(log, "[%d] done, status %d\n", worker, status);
+      else {
         fprintf(log, "[%d] lost connection\n", worker);
         worker_exit(worker);
-        continue;
       }
-      fprintf(log, "[%d] done, status %d\n", worker, status);
     }
 
     if (FD_ISSET(listenfd, &readfds)) {
