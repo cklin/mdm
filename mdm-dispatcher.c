@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 21:40:01 cklin>
+// Time-stamp: <2009-01-06 21:56:41 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -17,6 +17,9 @@
 
 extern char **environ;
 
+static fd_set openfds;
+static int    maxfd;
+
 struct worker {
   int   fd;
   pid_t pid;
@@ -32,11 +35,14 @@ void worker_init(int fd, pid_t pid)
   assert(ready < MAX_WORKERS);
   workers[ready].fd = fd;
   workers[ready++].pid = pid;
+  FD_SET(fd, &openfds);
+  if (fd > maxfd)  maxfd = fd;
 }
 
 void worker_exit(int widx)
 {
   assert(IS_READY(widx));
+  FD_CLR(workers[widx].fd, &openfds);
   workers[widx] = workers[--ready];
 }
 
@@ -78,10 +84,8 @@ void issue(int widx)
 int main(int argc, char *argv[])
 {
   int       listenfd;
-  int       widx;
-  int       maxfd;
   char      *sockdir;
-  fd_set    readfds;
+  int       widx;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -93,6 +97,8 @@ int main(int argc, char *argv[])
     strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
     strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
     listenfd = serv_listen(cmdaddr);
+    FD_SET(listenfd, &openfds);
+    maxfd = listenfd;
   }
 
   {
@@ -106,12 +112,7 @@ int main(int argc, char *argv[])
 
   wind_down = false;
   while (ready > 0 || !wind_down) {
-    FD_ZERO(&readfds);
-    FD_SET(listenfd, &readfds);
-    for (widx=0, maxfd=listenfd; widx<ready; widx++) {
-      FD_SET(workers[widx].fd, &readfds);
-      if (workers[widx].fd > maxfd)  maxfd = workers[widx].fd;
-    }
+    fd_set readfds = openfds;
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
