@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 21:26:18 cklin>
+// Time-stamp: <2009-01-06 21:40:01 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -27,15 +27,6 @@ static int ready;
 
 #define IS_READY(x) (0 <= (x) && (x) < ready)
 
-void worker_swap(int w1, int w2)
-{
-  struct worker temp;
-
-  temp = workers[w1];
-  workers[w1] = workers[w2];
-  workers[w2] = temp;
-}
-
 void worker_init(int fd, pid_t pid)
 {
   assert(ready < MAX_WORKERS);
@@ -43,10 +34,10 @@ void worker_init(int fd, pid_t pid)
   workers[ready++].pid = pid;
 }
 
-void worker_exit(int w)
+void worker_exit(int widx)
 {
-  assert(IS_READY(w));
-  worker_swap(w, --ready);
+  assert(IS_READY(widx));
+  workers[widx] = workers[--ready];
 }
 
 static bool wind_down;
