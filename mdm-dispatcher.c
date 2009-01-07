@@ -1,5 +1,6 @@
-// Time-stamp: <2009-01-06 19:24:11 cklin>
+// Time-stamp: <2009-01-06 20:17:17 cklin>
 
+#include <assert.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -16,7 +17,44 @@
 
 extern char **environ;
 
-#define FD_WORKER(fd) ((fd) != -1)
+static int workers[MAX_WORKERS];
+static int busy, ready;
+
+#define IS_BUSY(x)  (0 <= (x) && (x) < busy)
+#define IS_READY(x) (busy <= (x) && (x) < ready)
+
+void worker_swap(int w1, int w2)
+{
+  int temp;
+
+  temp = workers[w1];
+  workers[w1] = workers[w2];
+  workers[w2] = temp;
+}
+
+void worker_init(int fd)
+{
+  assert(ready < MAX_WORKERS);
+  workers[ready++] = fd;
+}
+
+void worker_exit(int w)
+{
+  assert(IS_READY(w));
+  worker_swap(w, --ready);
+}
+
+void worker_busy(int w)
+{
+  assert(IS_READY(w));
+  worker_swap(w, busy++);
+}
+
+void worker_idle(int w)
+{
+  assert(IS_BUSY(w));
+  worker_swap(w, --busy);
+}
 
 void issue(int worker_fd, char *file)
 {
@@ -42,10 +80,9 @@ int main(int argc, char *argv[])
 {
   const int zero = 0;
   int       listenfd;
-  int       retval, status;
-  int       worker, nworkers;
-  int       commfd[MAX_WORKERS], maxfd;
-  bool      busy[MAX_WORKERS];
+  int       retval;
+  int       worker;
+  int       maxfd;
   pid_t     pid;
   char      file[MAX_ARG_SIZE];
   char      *sockdir;
@@ -70,77 +107,61 @@ int main(int argc, char *argv[])
   if (log == NULL)  err(3, "Log file %s", logaddr);
   setvbuf(log, NULL, _IONBF, 0);
 
-  nworkers = 0;
-  for (worker=0; worker<MAX_WORKERS; worker++)
-    commfd[worker] = -1;
-
   wind_down = false;
-  for ( ; ; ) {
-    if (! wind_down)
-      for (worker=0; worker<MAX_WORKERS; worker++) {
-        if (! FD_WORKER(commfd[worker]))  continue;
-        if (busy[worker])  continue;
-        if (!fgets(file, MAX_ARG_SIZE, stdin)) {
-          wind_down = true;
-          break;
-        }
-        issue(commfd[worker], file);
-        fprintf(log, "[%d] %s\n", worker, file);
-        busy[worker] = true;
-      }
+  while (ready > 0 || !wind_down) {
 
-    for (worker=0; worker<MAX_WORKERS; worker++) {
-      if (! FD_WORKER(commfd[worker]))  continue;
-      if (busy[worker])  continue;
-      write(commfd[worker], &zero, sizeof (int));
-      close(commfd[worker]);
-      commfd[worker] = -1;
-      nworkers--;
-    }
-    if (wind_down && nworkers == 0)  break;
+    assert(ready == busy);
 
     FD_ZERO(&readfds);
     FD_SET(listenfd, &readfds);
-    for (worker=0, maxfd=listenfd; worker<MAX_WORKERS; worker++) {
-      if (! FD_WORKER(commfd[worker]))  continue;
-      FD_SET(commfd[worker], &readfds);
-      if (commfd[worker] > maxfd)  maxfd = commfd[worker];
+    for (worker=0, maxfd=listenfd; worker<ready; worker++) {
+      FD_SET(workers[worker], &readfds);
+      if (workers[worker] > maxfd)  maxfd = workers[worker];
     }
     retval = select(maxfd+1, &readfds, NULL, NULL, NULL);
     if (retval < 0)  err(4, "select");
 
-    for (worker=0; worker<MAX_WORKERS; worker++) {
-      if (! FD_WORKER(commfd[worker]))  continue;
-      if (FD_ISSET(commfd[worker], &readfds)) {
-        if (!busy[worker])
-          errx(5, "worker %d protocol error", worker);
-        retval = read(commfd[worker], &status, sizeof (int));
-        if (retval == 0) {
-          fprintf(log, "[%d] lost connection\n", worker);
-          commfd[worker] = -1;
-          nworkers--;
-          continue;
-        }
-        fprintf(log, "[%d] done, status %d\n", worker, status);
-        busy[worker] = false;
+    for (worker=busy-1; worker>=0; worker--)
+      if (FD_ISSET(workers[worker], &readfds))
+        worker_idle(worker);
+
+    for (worker=ready-1; worker>=busy; worker--) {
+      int status;
+
+      retval = read(workers[worker], &status, sizeof (int));
+      if (retval == 0) {
+        fprintf(log, "[%d] lost connection\n", worker);
+        worker_exit(worker);
+        continue;
       }
+      fprintf(log, "[%d] done, status %d\n", worker, status);
     }
 
     if (FD_ISSET(listenfd, &readfds)) {
-      int comm;
+      int new_worker;
 
-      comm = serv_accept(listenfd);
-      if (nworkers == MAX_WORKERS) {
-        close(comm);
-        continue;
+      new_worker = serv_accept(listenfd);
+      if (ready == MAX_WORKERS)
+        close(new_worker);
+      else {
+        worker_init(new_worker);
+        read(new_worker, &pid, sizeof (pid_t));
+        fprintf(log, "[%d] online! pid=%d\n", ready, pid);
       }
-      for (worker=0; FD_WORKER(commfd[worker]); worker++);
-      commfd[worker] = comm;
-      read(commfd[worker], &pid, sizeof (pid_t));
-      fprintf(log, "[%d] online! pid=%d\n", worker, pid);
-      busy[worker] = false;
-      nworkers++;
     }
+
+    for (worker=busy; worker<ready; worker++)
+      if (wind_down || !fgets(file, MAX_ARG_SIZE, stdin)) {
+        write(workers[worker], &zero, sizeof (int));
+        close(workers[worker]);
+        worker_exit(worker);
+        wind_down = true;
+      }
+      else {
+        issue(workers[worker], file);
+        fprintf(log, "[%d] %s\n", worker, file);
+        worker_busy(worker);
+      }
   }
 
   return 0;
