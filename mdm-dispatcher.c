@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:33:25 cklin>
+// Time-stamp: <2009-01-06 20:36:09 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -145,14 +145,14 @@ int main(int argc, char *argv[])
       else {
         pid_t pid;
         worker_init(new_widx);
-        read(new_widx, &pid, sizeof (pid_t));
+        readn(new_widx, &pid, sizeof (pid_t));
         fprintf(log, "[%d] online! pid=%d\n", ready, pid);
       }
     }
 
     for (widx=busy; widx<ready; widx++)
       if (wind_down || !fgets(file, MAX_ARG_SIZE, stdin)) {
-        write(workers[widx], &zero, sizeof (int));
+        writen(workers[widx], &zero, sizeof (int));
         close(workers[widx]);
         worker_exit(widx);
         wind_down = true;
