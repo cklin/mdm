@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:29:06 cklin>
+// Time-stamp: <2009-01-06 20:33:25 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 {
   const int zero = 0;
   int       listenfd;
-  int       worker;
+  int       widx;
   int       maxfd;
   char      file[MAX_ARG_SIZE];
   char      *sockdir;
@@ -116,51 +116,51 @@ int main(int argc, char *argv[])
 
     FD_ZERO(&readfds);
     FD_SET(listenfd, &readfds);
-    for (worker=0, maxfd=listenfd; worker<ready; worker++) {
-      FD_SET(workers[worker], &readfds);
-      if (workers[worker] > maxfd)  maxfd = workers[worker];
+    for (widx=0, maxfd=listenfd; widx<ready; widx++) {
+      FD_SET(workers[widx], &readfds);
+      if (workers[widx] > maxfd)  maxfd = workers[widx];
     }
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
-    for (worker=busy-1; worker>=0; worker--)
-      if (FD_ISSET(workers[worker], &readfds))
-        worker_idle(worker);
+    for (widx=busy-1; widx>=0; widx--)
+      if (FD_ISSET(workers[widx], &readfds))
+        worker_idle(widx);
 
-    for (worker=ready-1; worker>=busy; worker--) {
+    for (widx=ready-1; widx>=busy; widx--) {
       int status;
-      if (readn(workers[worker], &status, sizeof (int)))
-        fprintf(log, "[%d] done, status %d\n", worker, status);
+      if (readn(workers[widx], &status, sizeof (int)))
+        fprintf(log, "[%d] done, status %d\n", widx, status);
       else {
-        fprintf(log, "[%d] lost connection\n", worker);
-        worker_exit(worker);
+        fprintf(log, "[%d] lost connection\n", widx);
+        worker_exit(widx);
       }
     }
 
     if (FD_ISSET(listenfd, &readfds)) {
-      int new_worker;
-      new_worker = serv_accept(listenfd);
+      int new_widx;
+      new_widx = serv_accept(listenfd);
       if (ready == MAX_WORKERS)
-        close(new_worker);
+        close(new_widx);
       else {
         pid_t pid;
-        worker_init(new_worker);
-        read(new_worker, &pid, sizeof (pid_t));
+        worker_init(new_widx);
+        read(new_widx, &pid, sizeof (pid_t));
         fprintf(log, "[%d] online! pid=%d\n", ready, pid);
       }
     }
 
-    for (worker=busy; worker<ready; worker++)
+    for (widx=busy; widx<ready; widx++)
       if (wind_down || !fgets(file, MAX_ARG_SIZE, stdin)) {
-        write(workers[worker], &zero, sizeof (int));
-        close(workers[worker]);
-        worker_exit(worker);
+        write(workers[widx], &zero, sizeof (int));
+        close(workers[widx]);
+        worker_exit(widx);
         wind_down = true;
       }
       else {
-        issue(workers[worker], file);
-        fprintf(log, "[%d] %s\n", worker, file);
-        worker_busy(worker);
+        issue(workers[widx], file);
+        fprintf(log, "[%d] %s\n", widx, file);
+        worker_busy(widx);
       }
   }
 
