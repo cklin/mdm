@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:17:17 cklin>
+// Time-stamp: <2009-01-06 20:21:57 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -83,11 +83,8 @@ int main(int argc, char *argv[])
   int       retval;
   int       worker;
   int       maxfd;
-  pid_t     pid;
   char      file[MAX_ARG_SIZE];
   char      *sockdir;
-  char      cmdaddr[MAX_PATH_SIZE];
-  char      logaddr[MAX_PATH_SIZE];
   FILE      *log;
   fd_set    readfds;
   bool      wind_down;
@@ -96,16 +93,22 @@ int main(int argc, char *argv[])
     errx(1, "Need socket directory argument");
   sockdir = argv[1];
 
-  check_sockdir(sockdir);
-  strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
-  strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
-  listenfd = serv_listen(cmdaddr);
+  {
+    char cmdaddr[MAX_PATH_SIZE];
+    check_sockdir(sockdir);
+    strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
+    strncat(cmdaddr, CMD_SOCK, sizeof (cmdaddr));
+    listenfd = serv_listen(cmdaddr);
+  }
 
-  strncpy(logaddr, sockdir, sizeof (logaddr));
-  strncat(logaddr, LOG_FILE, sizeof (logaddr));
-  log = fopen(logaddr, "w+");
-  if (log == NULL)  err(3, "Log file %s", logaddr);
-  setvbuf(log, NULL, _IONBF, 0);
+  {
+    char logaddr[MAX_PATH_SIZE];
+    strncpy(logaddr, sockdir, sizeof (logaddr));
+    strncat(logaddr, LOG_FILE, sizeof (logaddr));
+    log = fopen(logaddr, "w+");
+    if (log == NULL)  err(3, "Log file %s", logaddr);
+    setvbuf(log, NULL, _IONBF, 0);
+  }
 
   wind_down = false;
   while (ready > 0 || !wind_down) {
@@ -127,7 +130,6 @@ int main(int argc, char *argv[])
 
     for (worker=ready-1; worker>=busy; worker--) {
       int status;
-
       retval = read(workers[worker], &status, sizeof (int));
       if (retval == 0) {
         fprintf(log, "[%d] lost connection\n", worker);
@@ -139,11 +141,11 @@ int main(int argc, char *argv[])
 
     if (FD_ISSET(listenfd, &readfds)) {
       int new_worker;
-
       new_worker = serv_accept(listenfd);
       if (ready == MAX_WORKERS)
         close(new_worker);
       else {
+        pid_t pid;
         worker_init(new_worker);
         read(new_worker, &pid, sizeof (pid_t));
         fprintf(log, "[%d] online! pid=%d\n", ready, pid);
