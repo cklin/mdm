@@ -1,5 +1,5 @@
 syntax: glob
 *.o
-mdm-agent
+mdm-worker
 mdm-dispatcher
 mdm-liason
