@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:48:18 cklin>
+// Time-stamp: <2009-01-06 21:10:10 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -18,10 +18,9 @@
 extern char **environ;
 
 static int workers[MAX_WORKERS];
-static int busy, ready;
+static int ready;
 
-#define IS_BUSY(x)  (0 <= (x) && (x) < busy)
-#define IS_READY(x) (busy <= (x) && (x) < ready)
+#define IS_READY(x) (0 <= (x) && (x) < ready)
 
 void worker_swap(int w1, int w2)
 {
@@ -42,18 +41,6 @@ void worker_exit(int w)
 {
   assert(IS_READY(w));
   worker_swap(w, --ready);
-}
-
-void worker_busy(int w)
-{
-  assert(IS_READY(w));
-  worker_swap(w, busy++);
-}
-
-void worker_idle(int w)
-{
-  assert(IS_BUSY(w));
-  worker_swap(w, --busy);
 }
 
 static bool wind_down;
@@ -89,7 +76,6 @@ void issue(int widx)
   free(cwd);
 
   fprintf(log, "[%d] %s\n", widx, file);
-  worker_busy(widx);
 }
 
 int main(int argc, char *argv[])
@@ -123,9 +109,6 @@ int main(int argc, char *argv[])
 
   wind_down = false;
   while (ready > 0 || !wind_down) {
-
-    assert(ready == busy);
-
     FD_ZERO(&readfds);
     FD_SET(listenfd, &readfds);
     for (widx=0, maxfd=listenfd; widx<ready; widx++) {
@@ -135,35 +118,32 @@ int main(int argc, char *argv[])
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
-    for (widx=busy-1; widx>=0; widx--)
-      if (FD_ISSET(workers[widx], &readfds))
-        worker_idle(widx);
-
-    for (widx=ready-1; widx>=busy; widx--) {
-      int status;
-      if (readn(workers[widx], &status, sizeof (int)))
-        fprintf(log, "[%d] done, status %d\n", widx, status);
-      else {
-        fprintf(log, "[%d] lost connection\n", widx);
-        worker_exit(widx);
+    for (widx=ready-1; widx>=0; widx--)
+      if (FD_ISSET(workers[widx], &readfds)) {
+        int status;
+        if (readn(workers[widx], &status, sizeof (int))) {
+          fprintf(log, "[%d] done, status %d\n", widx, status);
+          issue(widx);
+        }
+        else {
+          fprintf(log, "[%d] lost connection\n", widx);
+          worker_exit(widx);
+        }
       }
-    }
 
     if (FD_ISSET(listenfd, &readfds)) {
-      int new_widx;
-      new_widx = serv_accept(listenfd);
+      int new_fd;
+      new_fd = serv_accept(listenfd);
       if (ready == MAX_WORKERS)
-        close(new_widx);
+        close(new_fd);
       else {
         pid_t pid;
-        worker_init(new_widx);
-        readn(new_widx, &pid, sizeof (pid_t));
+        worker_init(new_fd);
+        readn(new_fd, &pid, sizeof (pid_t));
         fprintf(log, "[%d] online! pid=%d\n", ready, pid);
+        issue(ready-1);
       }
     }
-
-    for (widx=busy; widx<ready; widx++)
-        issue(widx);
   }
 
   return 0;
