@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-06 20:36:09 cklin>
+// Time-stamp: <2009-01-06 20:48:18 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -56,14 +56,27 @@ void worker_idle(int w)
   worker_swap(w, --busy);
 }
 
-void issue(int worker_fd, char *file)
+static bool wind_down;
+static FILE *log;
+
+void issue(int widx)
 {
-  const int one = 1;
+  const int zero = 0, one = 1;
+  char      file[MAX_ARG_SIZE];
   int       last;
+  int       worker_fd = workers[widx];
   char      *cwd;
   char      *cmd[] =
     { "/usr/bin/lame", "--resample", "22.05",
       "-m", "m", "-V", "6", file, NULL };
+
+  if (wind_down || !fgets(file, MAX_ARG_SIZE, stdin)) {
+    writen(worker_fd, &zero, sizeof (int));
+    close(worker_fd);
+    worker_exit(widx);
+    wind_down = true;
+    return;
+  }
 
   last = strlen(file)-1;
   if (file[last] == '\n')  file[last] = '\0';
@@ -74,19 +87,18 @@ void issue(int worker_fd, char *file)
   write_args(worker_fd, (const char **) cmd);
   write_args(worker_fd, (const char **) environ);
   free(cwd);
+
+  fprintf(log, "[%d] %s\n", widx, file);
+  worker_busy(widx);
 }
 
 int main(int argc, char *argv[])
 {
-  const int zero = 0;
   int       listenfd;
   int       widx;
   int       maxfd;
-  char      file[MAX_ARG_SIZE];
   char      *sockdir;
-  FILE      *log;
   fd_set    readfds;
-  bool      wind_down;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -151,17 +163,7 @@ int main(int argc, char *argv[])
     }
 
     for (widx=busy; widx<ready; widx++)
-      if (wind_down || !fgets(file, MAX_ARG_SIZE, stdin)) {
-        writen(workers[widx], &zero, sizeof (int));
-        close(workers[widx]);
-        worker_exit(widx);
-        wind_down = true;
-      }
-      else {
-        issue(workers[widx], file);
-        fprintf(log, "[%d] %s\n", widx, file);
-        worker_busy(widx);
-      }
+        issue(widx);
   }
 
   return 0;
