@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-09 21:29:29 cklin>
+// Time-stamp: <2009-01-09 22:08:55 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -14,12 +14,7 @@ void write_cmd(char *argv[])
 {
   char        *cwd, *core_addr;
   int         core_fd;
-  struct stat sock_stat, exe_stat;
-
-  if (stat(*argv, &exe_stat) < 0)
-    err(2, "Cannot stat executable %s", *argv);
-  if (!S_ISREG(exe_stat.st_mode))
-    errx(3, "%s: Not a regular file", *argv);
+  struct stat sock_stat;
 
   core_addr = getenv("MDM_CMD_SOCK");
   if (!core_addr)  return;
@@ -46,10 +41,16 @@ void write_cmd(char *argv[])
 
 int main(int argc, char *argv[])
 {
+  struct stat exe_stat;
+
   if (argc < 2)
     errx(1, "Please supply command as arguments");
+  if (stat(*(++argv), &exe_stat) < 0)
+    err(2, "Cannot stat executable %s", *argv);
+  if (!S_ISREG(exe_stat.st_mode))
+    errx(3, "%s: Not a regular file", *argv);
 
-  write_cmd(++argv);
+  write_cmd(argv);
   if (execve(*argv, argv, environ) < 0)
     errx(8, "execve: %s", *argv);
 
