@@ -7,6 +7,6 @@ screen mdm-worker $TMPFILE
 screen mdm-worker $TMPFILE
 screen mdm-worker $TMPFILE
 EOF
-mdm-dispatcher $TMPFILE < $1 &
+mdm-core $TMPFILE < $1 &
 screen -c $TMPFILE/screenrc
 rm -Rf $TMPFILE
