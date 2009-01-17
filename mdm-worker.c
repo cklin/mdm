@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 12:49:27 cklin>
+// Time-stamp: <2009-01-16 18:26:33 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   initwd_fd = open(".", O_RDONLY);
   comm_fd = hookup(argv[1]);
   pid = getpid();
-  write(comm_fd, &pid, sizeof (pid_t));
+  writen(comm_fd, &pid, sizeof (pid_t));
 
   for ( ; ; ) {
     readn(comm_fd, &op, sizeof (int));
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
       execve(cmd.args[0], cmd.args, env.args);
     }
     wait(&status);
-    write(comm_fd, &status, sizeof (int));
+    writen(comm_fd, &status, sizeof (int));
   }
 
   fchdir(initwd_fd);
