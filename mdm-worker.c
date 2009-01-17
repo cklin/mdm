@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-16 18:26:33 cklin>
+// Time-stamp: <2009-01-16 18:30:41 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -16,7 +16,7 @@ int hookup(const char path[])
 
   check_sockdir(path);
   strncpy(addr, path, sizeof (addr));
-  strncat(addr, CMD_SOCK, sizeof (addr));
+  strncat(addr, ISSUE_SOCK, sizeof (addr));
   return cli_conn(addr);
 }
 

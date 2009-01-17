@@ -1,12 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
-cat <<EOF > $TMPFILE/screenrc
+cat <<EOF >> $TMPFILE/screenrc
+screen mdm-core $TMPFILE `for i in "$@"; do echo -n "'$i' "; done`
 screen mdm-worker $TMPFILE
 screen mdm-worker $TMPFILE
 screen mdm-worker $TMPFILE
 screen mdm-worker $TMPFILE
+select 0
 EOF
-mdm-core $TMPFILE < $1 &
 screen -c $TMPFILE/screenrc
 rm -Rf $TMPFILE

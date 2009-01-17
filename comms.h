@@ -1,9 +1,10 @@
-// Time-stamp: <2008-12-31 13:59:15 cklin>
+// Time-stamp: <2009-01-16 18:30:13 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
 
-#define CMD_SOCK  "/cmd"
+#define FETCH_SOCK  "/fetch"
+#define ISSUE_SOCK  "/issue"
 #define LOG_FILE  "/log"
 
 #include <unistd.h>
