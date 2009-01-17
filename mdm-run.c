@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-09 22:08:55 cklin>
+// Time-stamp: <2009-01-16 18:12:59 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -12,6 +12,7 @@ extern char **environ;
 
 void write_cmd(char *argv[])
 {
+  const int   one = 1;
   char        *cwd, *core_addr;
   int         core_fd;
   struct stat sock_stat;
@@ -30,6 +31,7 @@ void write_cmd(char *argv[])
   if (core_fd < 0)
     errx(7, "%s: cli_conn error", core_addr);
 
+  writen(core_fd, &one, sizeof (int));
   cwd = get_current_dir_name();
   write_string(core_fd, cwd);
   write_args(core_fd, (const char **) argv);
