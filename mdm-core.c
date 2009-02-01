@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:03:06 cklin>
+// Time-stamp: <2009-01-31 22:05:25 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -143,12 +143,16 @@ int main(int argc, char *argv[])
 
   pid = fork();
   if (pid == 0) {
+    char *exe;
     int core_fd, status = 0;
     pid = fork();
     if (pid == 0) {
       setenv(CMD_SOCK_VAR, fetchaddr, 1);
-      if (execve(*argv, ++argv, environ) < 0)
-        err(8, "execve: %s", *argv);
+      exe = resolv_exec(*(++argv));
+      if (!exe)
+        errx(8, "Cannot find executable %s", *argv);
+      if (execve(exe, argv, environ) < 0)
+        err(9, "execve: %s", exe);
     }
     wait(&status);
     core_fd = cli_conn(fetchaddr);

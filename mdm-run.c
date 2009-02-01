@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:03:52 cklin>
+// Time-stamp: <2009-01-31 22:06:11 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -11,17 +11,16 @@ extern char **environ;
 
 int main(int argc, char *argv[])
 {
-  struct stat exe_stat;
   struct stat sock_stat;
-  char        *cwd, *core_addr;
+  char        *cwd, *exe, *core_addr;
   int         core_fd, status;
 
   if (argc < 2)
     errx(1, "Please supply command as arguments");
-  if (stat(*(++argv), &exe_stat) < 0)
-    err(2, "Cannot stat executable %s", *argv);
-  if (!S_ISREG(exe_stat.st_mode))
-    errx(3, "%s: Not a regular file", *argv);
+  exe = resolv_exec(*(++argv));
+  if (!exe)
+    errx(2, "Cannot find executable %s", *argv);
+  *argv = exe;
 
   core_addr = getenv(CMD_SOCK_VAR);
   if (!core_addr)
