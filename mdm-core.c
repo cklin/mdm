@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 19:11:25 cklin>
+// Time-stamp: <2009-01-31 20:37:31 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -96,7 +96,6 @@ int main(int argc, char *argv[])
   char      *sockdir;
   int       widx;
 
-  printf("argc = %d\n", argc);
   if (argc < 3)
     errx(1, "Need comms directory and command");
   sockdir = *(++argv);
