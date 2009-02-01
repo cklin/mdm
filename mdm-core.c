@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:37:31 cklin>
+// Time-stamp: <2009-01-31 20:41:37 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     int core_fd, status = 0;
     pid = fork();
     if (pid == 0) {
-      setenv("MDM_CMD_SOCK", fetchaddr, 1);
+      setenv(CMD_SOCK_VAR, fetchaddr, 1);
       if (execve(*argv, ++argv, environ) < 0)
         err(8, "execve: %s", *argv);
     }

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 19:08:39 cklin>
+// Time-stamp: <2009-01-31 20:41:27 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -11,9 +11,10 @@
 #define MAX_ARG_SIZE  65536
 #define MAX_ARG_COUNT 256
 
-#define FETCH_SOCK  "/fetch"
-#define ISSUE_SOCK  "/issue"
-#define LOG_FILE  "/log"
+#define CMD_SOCK_VAR  "MDM_CMD_SOCK"
+#define FETCH_SOCK    "/fetch"
+#define ISSUE_SOCK    "/issue"
+#define LOG_FILE      "/log"
 
 struct argv {
   char buffer[MAX_ARG_SIZE];

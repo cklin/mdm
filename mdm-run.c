@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:36:03 cklin>
+// Time-stamp: <2009-01-31 20:41:49 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
   if (!S_ISREG(exe_stat.st_mode))
     errx(3, "%s: Not a regular file", *argv);
 
-  core_addr = getenv("MDM_CMD_SOCK");
+  core_addr = getenv(CMD_SOCK_VAR);
   if (!core_addr)
     if (execve(*argv, argv, environ) < 0)
       errx(8, "execve: %s", *argv);
