@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:00:35 cklin>
+// Time-stamp: <2009-01-31 21:02:13 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -149,7 +149,6 @@ int main(int argc, char *argv[])
       if (execve(*argv, ++argv, environ) < 0)
         err(8, "execve: %s", *argv);
     }
-    sleep(10);
     wait(&status);
     core_fd = cli_conn(fetchaddr);
     write_int(core_fd, 0);
