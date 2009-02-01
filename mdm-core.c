@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:02:13 cklin>
+// Time-stamp: <2009-01-31 21:03:06 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -74,6 +74,7 @@ void issue(int widx, int fetch_fd)
   read_block(run_fd, cwd);
   read_args(run_fd, &cmd);
   read_args(run_fd, &env);
+  write_int(run_fd, 0);
   close(run_fd);
 
   write_int(worker_fd, 1);

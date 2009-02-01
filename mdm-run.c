@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:57:34 cklin>
+// Time-stamp: <2009-01-31 21:03:52 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -12,9 +12,9 @@ extern char **environ;
 int main(int argc, char *argv[])
 {
   struct stat exe_stat;
-  char        *cwd, *core_addr;
-  int         core_fd;
   struct stat sock_stat;
+  char        *cwd, *core_addr;
+  int         core_fd, status;
 
   if (argc < 2)
     errx(1, "Please supply command as arguments");
@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
   write_string(core_fd, cwd);
   write_args(core_fd, (const char **) argv);
   write_args(core_fd, (const char **) environ);
+  readn(core_fd, &status, sizeof (int));
   close(core_fd);
 
   return 0;
