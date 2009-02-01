@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:21:48 cklin>
+// Time-stamp: <2009-01-31 21:01:37 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -166,7 +166,7 @@ int write_args(int fd, const char *args[])
     return -1;
   }
 
-  writen(fd, &size, sizeof (int));
+  write_int(fd, size);
   for (index=0; args[index]; index++)
     writen(fd, args[index], strlen(args[index])+1);
   return 0;
@@ -191,7 +191,7 @@ int write_string(int fd, const char buffer[])
   int size;
 
   size = strlen(buffer)+1;
-  writen(fd, &size, sizeof (int));
+  write_int(fd, size);
   writen(fd, buffer, size);
   return size;
 }
@@ -238,3 +238,11 @@ int unpack_args(char buffer[], int size, char *args[])
   args[--arg] = NULL;
   return arg;
 }
+
+// Write an integer to a file descriptor
+
+ssize_t write_int(int fd, int v)
+{
+  return writen(fd, &v, sizeof (int));
+}
+

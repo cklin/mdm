@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:48:41 cklin>
+// Time-stamp: <2009-01-31 21:00:35 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -50,7 +50,6 @@ static FILE *log;
 
 void issue(int widx, int fetch_fd)
 {
-  const int zero = 0, one = 1;
   int       opcode, run_fd, index;
   int       worker_fd = workers[widx].fd;
 
@@ -66,7 +65,7 @@ void issue(int widx, int fetch_fd)
     }
   }
   if (wind_down) {
-    writen(worker_fd, &zero, sizeof (int));
+    write_int(worker_fd, 0);
     close(worker_fd);
     worker_exit(widx);
     return;
@@ -77,7 +76,7 @@ void issue(int widx, int fetch_fd)
   read_args(run_fd, &env);
   close(run_fd);
 
-  writen(worker_fd, &one, sizeof (int));
+  write_int(worker_fd, 1);
   write_string(worker_fd, cwd);
   write_args(worker_fd, (const char **) cmd.args);
   write_args(worker_fd, (const char **) env.args);
@@ -143,7 +142,6 @@ int main(int argc, char *argv[])
 
   pid = fork();
   if (pid == 0) {
-    const int zero = 0;
     int core_fd, status = 0;
     pid = fork();
     if (pid == 0) {
@@ -154,7 +152,7 @@ int main(int argc, char *argv[])
     sleep(10);
     wait(&status);
     core_fd = cli_conn(fetchaddr);
-    writen(core_fd, &zero, sizeof (int));
+    write_int(core_fd, 0);
     exit(status);
   }
 

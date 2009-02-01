@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 19:11:43 cklin>
+// Time-stamp: <2009-01-31 20:58:05 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
       execve(cmd.args[0], cmd.args, env.args);
     }
     wait(&status);
-    writen(comm_fd, &status, sizeof (int));
+    write_int(comm_fd, status);
   }
 
   fchdir(initwd_fd);

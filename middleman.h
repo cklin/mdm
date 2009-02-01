@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:41:27 cklin>
+// Time-stamp: <2009-01-31 21:01:43 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -30,6 +30,7 @@ int unpack_args(char buffer[], int size, char *args[]);
 
 ssize_t writen(int fd, const void *vptr, size_t n);
 ssize_t readn(int fd, void *vptr, size_t n);
+ssize_t write_int(int fd, int v);
 
 int serv_listen(const char *name);
 int cli_conn(const char *name);
