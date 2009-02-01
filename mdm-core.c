@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:41:37 cklin>
+// Time-stamp: <2009-01-31 20:48:41 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -48,7 +48,7 @@ void worker_exit(int widx)
 static bool wind_down;
 static FILE *log;
 
-void issue(int widx, int issue_fd)
+void issue(int widx, int fetch_fd)
 {
   const int zero = 0, one = 1;
   int       opcode, run_fd, index;
@@ -58,7 +58,7 @@ void issue(int widx, int issue_fd)
   char        cwd[MAX_ARG_SIZE];
 
   if (!wind_down) {
-    run_fd = serv_accept(issue_fd);
+    run_fd = serv_accept(fetch_fd);
     readn(run_fd, &opcode, sizeof (int));
     if (opcode == 0) {
       close(run_fd);
@@ -86,6 +86,21 @@ void issue(int widx, int issue_fd)
   for (index=0; cmd.args[index]; index++)
     fprintf(log, " %s", cmd.args[index]);
   fprintf(log, "\n");
+}
+
+void get_status(int widx, int fetch_fd)
+{
+  int status;
+  if (readn(workers[widx].fd, &status, sizeof (int))) {
+    fprintf(log, "[%5d] done, status %d\n",
+            workers[widx].pid, status);
+    issue(widx, fetch_fd);
+  }
+  else {
+    fprintf(log, "[%5d] lost connection\n",
+            workers[widx].pid);
+    worker_exit(widx);
+  }
 }
 
 int main(int argc, char *argv[])
@@ -150,19 +165,8 @@ int main(int argc, char *argv[])
       err(4, "select");
 
     for (widx=ready-1; widx>=0; widx--)
-      if (FD_ISSET(workers[widx].fd, &readfds)) {
-        int status;
-        if (readn(workers[widx].fd, &status, sizeof (int))) {
-          fprintf(log, "[%5d] done, status %d\n",
-                  workers[widx].pid, status);
-          issue(widx, fetch_fd);
-        }
-        else {
-          fprintf(log, "[%5d] lost connection\n",
-                  workers[widx].pid);
-          worker_exit(widx);
-        }
-      }
+      if (FD_ISSET(workers[widx].fd, &readfds))
+        get_status(widx, fetch_fd);
 
     if (FD_ISSET(listenfd, &readfds)) {
       int new_fd;
