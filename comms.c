@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-01 11:43:33 cklin>
+// Time-stamp: <2009-01-31 19:11:05 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -7,8 +7,7 @@
 #include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
-#include "bounds.h"
-#include "comms.h"
+#include "middleman.h"
 
 // Advanced Programming in the Unix Environment, Program 12.12
 

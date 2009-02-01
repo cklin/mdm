@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-16 18:30:41 cklin>
+// Time-stamp: <2009-01-31 19:11:43 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -6,9 +6,7 @@
 #include <err.h>
 #include <unistd.h>
 #include <string.h>
-#include "bounds.h"
-#include "comms.h"
-#include "cmdline.h"
+#include "middleman.h"
 
 int hookup(const char path[])
 {

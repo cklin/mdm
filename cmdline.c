@@ -1,11 +1,9 @@
-// Time-stamp: <2008-12-31 18:33:28 cklin>
+// Time-stamp: <2009-01-31 19:11:15 cklin>
 
 #include <err.h>
 #include <unistd.h>
 #include <string.h>
-#include "bounds.h"
-#include "comms.h"
-#include "cmdline.h"
+#include "middleman.h"
 
 int write_args(int fd, const char *args[])
 {

@@ -1,12 +1,11 @@
-// Time-stamp: <2009-01-16 18:12:59 cklin>
+// Time-stamp: <2009-01-31 19:11:34 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include "comms.h"
-#include "cmdline.h"
+#include "middleman.h"
 
 extern char **environ;
 

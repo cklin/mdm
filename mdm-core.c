@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-16 20:45:03 cklin>
+// Time-stamp: <2009-01-31 19:11:25 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -12,9 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "bounds.h"
-#include "comms.h"
-#include "cmdline.h"
+#include "middleman.h"
 
 extern char **environ;
 
