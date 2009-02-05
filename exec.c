@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 22:00:34 cklin>
+// Time-stamp: <2009-02-04 21:27:41 cklin>
 
 #include <stdbool.h>
 #include <sys/types.h>
@@ -8,26 +8,9 @@
 #include <string.h>
 #include "middleman.h"
 
-bool check_exec(const char *addr)
+static bool check_exec(const char *pathname)
 {
-  struct stat exe_stat;
-  uid_t       euid;
-  gid_t       egid;
-
-  euid = geteuid();
-  egid = getegid();
-
-  if (stat(addr, &exe_stat) < 0)
-    return false;
-  if (!S_ISREG(exe_stat.st_mode))
-    return false;
-  if (exe_stat.st_uid == euid && (exe_stat.st_mode & S_IXUSR))
-    return true;
-  if (exe_stat.st_gid == egid && (exe_stat.st_mode & S_IXGRP))
-    return true;
-  if (exe_stat.st_mode & S_IXOTH)
-    return true;
-  return false;
+  return (euidaccess(pathname, X_OK) == 0);
 }
 
 char *resolv_exec(char *exe)
