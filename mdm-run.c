@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 22:06:11 cklin>
+// Time-stamp: <2009-02-05 01:15:01 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -12,19 +12,15 @@ extern char **environ;
 int main(int argc, char *argv[])
 {
   struct stat sock_stat;
-  char        *cwd, *exe, *core_addr;
+  char        *cwd, *core_addr;
   int         core_fd, status;
 
   if (argc < 2)
     errx(1, "Please supply command as arguments");
-  exe = resolv_exec(*(++argv));
-  if (!exe)
-    errx(2, "Cannot find executable %s", *argv);
-  *argv = exe;
 
   core_addr = getenv(CMD_SOCK_VAR);
   if (!core_addr)
-    if (execve(*argv, argv, environ) < 0)
+    if (execvp(*argv, ++argv) < 0)
       errx(8, "execve: %s", *argv);
 
   if (lstat(core_addr, &sock_stat) < 0)
@@ -41,7 +37,7 @@ int main(int argc, char *argv[])
   write_int(core_fd, 1);
   cwd = get_current_dir_name();
   write_string(core_fd, cwd);
-  write_args(core_fd, (const char **) argv);
+  write_args(core_fd, (const char **) ++argv);
   write_args(core_fd, (const char **) environ);
   readn(core_fd, &status, sizeof (int));
   close(core_fd);

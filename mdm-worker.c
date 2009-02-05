@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 20:58:05 cklin>
+// Time-stamp: <2009-02-05 01:09:02 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <string.h>
 #include "middleman.h"
+
+extern char **environ;
 
 int hookup(const char path[])
 {
@@ -46,7 +48,8 @@ int main(int argc, char *argv[])
     if (pid == 0) {
       close(comm_fd);
       chdir(cwd);
-      execve(cmd.args[0], cmd.args, env.args);
+      environ = env.args;
+      execvp(cmd.args[0], cmd.args);
     }
     wait(&status);
     write_int(comm_fd, status);
