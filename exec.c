@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-04 21:35:13 cklin>
+// Time-stamp: <2009-02-04 22:36:37 cklin>
 
 #include <stdbool.h>
 #include <sys/types.h>
@@ -18,49 +18,44 @@ static bool check_exec(const char *pathname)
   return false;
 }
 
-char *resolv_exec(char *exe)
+char *resolv_exec(char *exec)
 {
-  static char addr[MAX_PATH_SIZE];
-  char        *path, *end;
-  int         span, elen;
+  char *pathname, *env_path, *start, *end;
 
-  elen = strlen(exe);
+  if (!exec)  return NULL;
 
-  if (exe[0] == '/') {
-    if (check_exec(exe))
-      return exe;
+  // Absolute or relative pathname, no PATH resolution
+
+  if (strchr(exec, '/')) {
+    pathname = canonicalize_file_name(exec);
+    if (pathname)
+      if (check_exec(pathname))
+        return pathname;
     return NULL;
   }
 
-  if (strchr(exe, '/')) {
-    if (!getcwd(addr, MAX_PATH_SIZE))
-      return NULL;
-    span = strlen(addr);
-    if (span+elen+1 < MAX_PATH_SIZE) {
-      addr[span] = '/';
-      strcpy(addr+span+1, exe);
-      if (check_exec(addr))
-        return addr;
-    }
-    return NULL;
-  }
+  // Executable name only, require PATH resolution
 
-  path = getenv("PATH");
-  if (!path)  return NULL;
+  env_path = getenv("PATH");
+  if (!env_path)  return NULL;
 
-  for ( ; ; ) {
-    end = strchrnul(path, ':');
-    span = (int) (end-path);
-    if (span+elen+1 < MAX_PATH_SIZE) {
-      strncpy(addr, path, span);
-      addr[span] = '/';
-      strcpy(addr+span+1, exe);
-      if (check_exec(addr))
-        return addr;
+  pathname = malloc(strlen(env_path)+strlen(exec)+2);
+  if (!pathname)  return NULL;
+  strcpy(pathname, env_path);
+
+  start = end = env_path;
+  while (*end) {
+    end = strchrnul(start, ':');
+    if (start[0] == '/') {
+      int span = (int) (end-start);
+      strncpy(pathname, start, span);
+      if (pathname[span-1] != '/')
+        pathname[span++] = '/';
+      strcpy(pathname+span, exec);
+      if (check_exec(pathname))
+        return pathname;
     }
-    if (*end != ':')
-      break;
-    path = end+1;
+    start = end+1;
   }
   return NULL;
 }
