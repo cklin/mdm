@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:01:37 cklin>
+// Time-stamp: <2009-02-05 01:33:00 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -143,8 +143,6 @@ void check_sockdir(const char *path)
 {
   struct stat st;
 
-  if (strlen(path) > MAX_PATH_SIZE-20)
-    err(2, "Path %s is too long", path);
   if (lstat(path, &st) < 0)
     err(2, "stat(\"%s\")", path);
   if (! S_ISDIR(st.st_mode))
