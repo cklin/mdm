@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:33:05 cklin>
+// Time-stamp: <2009-02-05 02:05:53 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -6,8 +6,6 @@
 #include <unistd.h>
 
 #define MAX_WORKERS   4
-
-#define MAX_ARG_SIZE  65536
 #define MAX_ARG_COUNT 256
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
@@ -16,7 +14,7 @@
 #define LOG_FILE      "log"
 
 struct argv {
-  char buffer[MAX_ARG_SIZE];
+  char *buffer;
   char *args[MAX_ARG_COUNT];
 };
 
@@ -24,7 +22,7 @@ int write_args(int fd, const char *args[]);
 int read_args(int fd, struct argv *args);
 
 int write_string(int fd, const char buffer[]);
-int read_block(int fd, char buffer[]);
+int read_block(int fd, char **buffer);
 int unpack_args(char buffer[], int size, char *args[]);
 
 ssize_t writen(int fd, const void *vptr, size_t n);

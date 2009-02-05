@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:23:06 cklin>
+// Time-stamp: <2009-02-05 02:02:04 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -54,7 +54,7 @@ void issue(int widx, int fetch_fd)
   int       worker_fd = workers[widx].fd;
 
   struct argv cmd, env;
-  char        cwd[MAX_ARG_SIZE];
+  char        *cwd;
 
   if (!wind_down) {
     run_fd = serv_accept(fetch_fd);
@@ -71,7 +71,7 @@ void issue(int widx, int fetch_fd)
     return;
   }
 
-  read_block(run_fd, cwd);
+  read_block(run_fd, &cwd);
   read_args(run_fd, &cmd);
   read_args(run_fd, &env);
   write_int(run_fd, 0);
@@ -81,6 +81,10 @@ void issue(int widx, int fetch_fd)
   write_string(worker_fd, cwd);
   write_args(worker_fd, (const char **) cmd.args);
   write_args(worker_fd, (const char **) env.args);
+
+  free(cwd);
+  free(cmd.buffer);
+  free(env.buffer);
 
   fprintf(log, "[%5d]", workers[widx].pid);
   for (index=0; cmd.args[index]; index++)

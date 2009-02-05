@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:27:27 cklin>
+// Time-stamp: <2009-02-05 02:02:30 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -26,7 +26,7 @@ int hookup(const char *sockdir)
 int main(int argc, char *argv[])
 {
   struct argv cmd, env;
-  char        cwd[MAX_ARG_SIZE];
+  char        *cwd;
   int         op;
   int         comm_fd, initwd_fd;
   int         status;
@@ -43,13 +43,14 @@ int main(int argc, char *argv[])
   for ( ; ; ) {
     readn(comm_fd, &op, sizeof (int));
     if (op == 0)  break;
-    read_block(comm_fd, cwd);
-    read_args(comm_fd, &cmd);
-    read_args(comm_fd, &env);
 
     pid = fork();
     if (pid == 0) {
+      read_block(comm_fd, &cwd);
+      read_args(comm_fd, &cmd);
+      read_args(comm_fd, &env);
       close(comm_fd);
+
       chdir(cwd);
       environ = env.args;
       execvp(cmd.args[0], cmd.args);

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:33:00 cklin>
+// Time-stamp: <2009-02-05 02:05:37 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -159,11 +159,6 @@ int write_args(int fd, const char *args[])
 
   for (index=0, size=0; args[index]; index++, size++)
     size += strlen(args[index]);
-  if (size > MAX_ARG_SIZE) {
-    warnx("write_args: args (%d bytes) is too long", size);
-    return -1;
-  }
-
   write_int(fd, size);
   for (index=0; args[index]; index++)
     writen(fd, args[index], strlen(args[index])+1);
@@ -176,7 +171,7 @@ int read_args(int fd, struct argv *args)
 {
   int size;
 
-  size = read_block(fd, args->buffer);
+  size = read_block(fd, &(args->buffer));
   if (size > 0)
     unpack_args(args->buffer, size, args->args);
   return size;
@@ -196,21 +191,18 @@ int write_string(int fd, const char buffer[])
 
 // Read variable recorded-size block from file descriptor
 
-int read_block(int fd, char buffer[])
+int read_block(int fd, char **buffer)
 {
   int size = 0;
 
   readn(fd, &size, sizeof (int));
-  if (size > MAX_ARG_SIZE) {
-    warnx("read_block: input (%d bytes) is too big", size);
-    while (size > MAX_ARG_SIZE) {
-      readn(fd, &buffer, MAX_ARG_SIZE);
-      size -= MAX_ARG_SIZE;
-    }
-    return -1;
+  if (size == 0) {
+    *buffer = NULL;
+    return 0;
   }
-  readn(fd, buffer, size);
-  if (buffer[size-1]) {
+  *buffer = xmalloc(size);
+  readn(fd, *buffer, size);
+  if ((*buffer)[size-1]) {
     warnx("read_block: input is not null-terminated");
     return -2;
   }
