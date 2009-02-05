@@ -1,23 +1,26 @@
-// Time-stamp: <2009-02-05 01:09:02 cklin>
+// Time-stamp: <2009-02-05 01:27:27 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <err.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include "middleman.h"
 
 extern char **environ;
 
-int hookup(const char path[])
+int hookup(const char *sockdir)
 {
-  char addr[MAX_PATH_SIZE];
+  char *master_addr;
+  int status;
 
-  check_sockdir(path);
-  strncpy(addr, path, sizeof (addr));
-  strncat(addr, ISSUE_SOCK, sizeof (addr));
-  return cli_conn(addr);
+  check_sockdir(sockdir);
+  master_addr = path_join(sockdir, ISSUE_SOCK);
+  status = cli_conn(master_addr);
+  free(master_addr);
+  return status;
 }
 
 int main(int argc, char *argv[])

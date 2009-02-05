@@ -1,4 +1,4 @@
-// Time-stamp: <2009-01-31 21:57:17 cklin>
+// Time-stamp: <2009-02-05 01:24:28 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -12,9 +12,9 @@
 #define MAX_ARG_COUNT 256
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
-#define FETCH_SOCK    "/fetch"
-#define ISSUE_SOCK    "/issue"
-#define LOG_FILE      "/log"
+#define FETCH_SOCK    "fetch"
+#define ISSUE_SOCK    "issue"
+#define LOG_FILE      "log"
 
 struct argv {
   char buffer[MAX_ARG_SIZE];
@@ -38,6 +38,7 @@ int serv_accept(int listenfd);
 
 void check_sockdir(const char *path);
 
-char *resolv_exec(char *exe);
+void *xmalloc(size_t size);
+char *path_join(const char *path, const char *name);
 
 #endif

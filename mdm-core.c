@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:16:24 cklin>
+// Time-stamp: <2009-02-05 01:23:06 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -105,7 +105,7 @@ void get_status(int widx, int fetch_fd)
 
 int main(int argc, char *argv[])
 {
-  char      fetchaddr[MAX_PATH_SIZE];
+  char      *fetch_addr;
   pid_t     pid;
   int       listenfd, fetch_fd;
   char      *sockdir;
@@ -117,28 +117,24 @@ int main(int argc, char *argv[])
 
   {
     check_sockdir(sockdir);
-    strncpy(fetchaddr, sockdir, sizeof (fetchaddr));
-    strncat(fetchaddr, FETCH_SOCK, sizeof (fetchaddr));
-    fetch_fd = serv_listen(fetchaddr);
+    fetch_addr = path_join(sockdir, FETCH_SOCK);
+    fetch_fd = serv_listen(fetch_addr);
   }
 
   {
-    char cmdaddr[MAX_PATH_SIZE];
-    check_sockdir(sockdir);
-    strncpy(cmdaddr, sockdir, sizeof (cmdaddr));
-    strncat(cmdaddr, ISSUE_SOCK, sizeof (cmdaddr));
-    listenfd = serv_listen(cmdaddr);
+    char *slave_addr = path_join(sockdir, ISSUE_SOCK);
+    listenfd = serv_listen(slave_addr);
     FD_SET(listenfd, &openfds);
     maxfd = listenfd;
+    free(slave_addr);
   }
 
   {
-    char logaddr[MAX_PATH_SIZE];
-    strncpy(logaddr, sockdir, sizeof (logaddr));
-    strncat(logaddr, LOG_FILE, sizeof (logaddr));
-    log = fopen(logaddr, "w+");
-    if (log == NULL)  err(3, "Log file %s", logaddr);
+    char *log_file = path_join(sockdir, LOG_FILE);
+    log = fopen(log_file, "w+");
+    if (log == NULL)  err(3, "Log file %s", log_file);
     setvbuf(log, NULL, _IONBF, 0);
+    free(log_file);
   }
 
   pid = fork();
@@ -146,12 +142,12 @@ int main(int argc, char *argv[])
     int core_fd, status = 0;
     pid = fork();
     if (pid == 0) {
-      setenv(CMD_SOCK_VAR, fetchaddr, 1);
+      setenv(CMD_SOCK_VAR, fetch_addr, 1);
       if (execvp(*argv, ++argv) < 0)
         err(9, "execvp: %s", *argv);
     }
     wait(&status);
-    core_fd = cli_conn(fetchaddr);
+    core_fd = cli_conn(fetch_addr);
     write_int(core_fd, 0);
     exit(status);
   }
