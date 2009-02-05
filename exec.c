@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-04 21:27:41 cklin>
+// Time-stamp: <2009-02-04 21:35:13 cklin>
 
 #include <stdbool.h>
 #include <sys/types.h>
@@ -10,7 +10,12 @@
 
 static bool check_exec(const char *pathname)
 {
-  return (euidaccess(pathname, X_OK) == 0);
+  struct stat sb;
+
+  if (stat(pathname, &sb) < 0)
+    if (S_ISREG(sb.st_mode))
+      return (euidaccess(pathname, X_OK) == 0);
+  return false;
 }
 
 char *resolv_exec(char *exe)
