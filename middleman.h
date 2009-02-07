@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:10:05 cklin>
+// Time-stamp: <2009-02-06 23:13:02 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -22,18 +22,18 @@ typedef struct {
   char *cwd;
 } job;
 
-void read_job(int fd, job *job);
-void write_job(int fd, const job *job);
-
-ssize_t readn(int fd, void *vptr, size_t n);
-ssize_t writen(int fd, const void *vptr, size_t n);
-ssize_t write_int(int fd, int v);
-
 int serv_listen(const char *name);
 int serv_accept(int listenfd);
 int cli_conn(const char *name);
 
 void check_sockdir(const char *path);
+
+ssize_t readn(int fd, void *vptr, size_t n);
+ssize_t writen(int fd, const void *vptr, size_t n);
+ssize_t write_int(int fd, int v);
+
+void read_job(int fd, job *job);
+void write_job(int fd, const job *job);
 
 void *xmalloc(size_t size);
 char *path_join(const char *path, const char *name);
