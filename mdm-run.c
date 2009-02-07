@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 01:58:26 cklin>
+// Time-stamp: <2009-02-06 22:24:35 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
   write_int(core_fd, 1);
   cwd = get_current_dir_name();
   write_string(core_fd, cwd);
-  write_args(core_fd, (const char **) ++argv);
-  write_args(core_fd, (const char **) environ);
+  write_sv(core_fd, (const char **) ++argv);
+  write_sv(core_fd, (const char **) environ);
   readn(core_fd, &status, sizeof (int));
   close(core_fd);
 

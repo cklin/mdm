@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:09:25 cklin>
+// Time-stamp: <2009-02-06 22:26:47 cklin>
 
 #include <err.h>
 #include <stdlib.h>
@@ -36,8 +36,8 @@ char *path_join(const char *path, const char *name)
   return pathname;
 }
 
-void release_argv(struct argv *sv)
+void release_sv(sv *sv)
 {
   free(sv->buffer);
-  free(sv->args);
+  free(sv->svec);
 }

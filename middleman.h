@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:09:37 cklin>
+// Time-stamp: <2009-02-06 22:26:59 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -12,30 +12,30 @@
 #define ISSUE_SOCK    "issue"
 #define LOG_FILE      "log"
 
-struct argv {
+typedef struct {
   char *buffer;
-  char **args;
-};
+  char **svec;
+} sv;
 
-int write_args(int fd, const char *args[]);
-int read_args(int fd, struct argv *args);
+int read_block(int fd, char **buffer);
+int read_sv(int fd, sv *sv);
+int unpack_svec(sv *sv, int size);
 
 int write_string(int fd, const char buffer[]);
-int read_block(int fd, char **buffer);
-int unpack_args(char buffer[], int size, char *args[]);
+int write_sv(int fd, const char *svec[]);
 
-ssize_t writen(int fd, const void *vptr, size_t n);
 ssize_t readn(int fd, void *vptr, size_t n);
+ssize_t writen(int fd, const void *vptr, size_t n);
 ssize_t write_int(int fd, int v);
 
 int serv_listen(const char *name);
-int cli_conn(const char *name);
 int serv_accept(int listenfd);
+int cli_conn(const char *name);
 
 void check_sockdir(const char *path);
 
 void *xmalloc(size_t size);
 char *path_join(const char *path, const char *name);
-void release_argv(struct argv *sv);
+void release_sv(sv *sv);
 
 #endif

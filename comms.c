@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:05:56 cklin>
+// Time-stamp: <2009-02-06 22:26:28 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -153,30 +153,29 @@ void check_sockdir(const char *path)
 
 // Write NULL-terminated string vector to file descriptor
 
-int write_args(int fd, const char *args[])
+int write_sv(int fd, const char *svec[])
 {
   int index, size;
 
-  for (index=0, size=0; args[index]; index++, size++)
-    size += strlen(args[index]);
+  for (index=0, size=0; svec[index]; index++, size++)
+    size += strlen(svec[index]);
   write_int(fd, index);
   write_int(fd, size);
-  for (index=0; args[index]; index++)
-    writen(fd, args[index], strlen(args[index])+1);
+  for (index=0; svec[index]; index++)
+    writen(fd, svec[index], strlen(svec[index])+1);
   return 0;
 }
 
 // Read string vector from file descriptor
 
-int read_args(int fd, struct argv *args)
+int read_sv(int fd, sv *sv)
 {
-  int size, argc;
+  int size, count;
 
-  readn(fd, &argc, sizeof (int));
-  args->args = xmalloc((argc+1) * sizeof (char *));
-  size = read_block(fd, &(args->buffer));
-  if (size > 0)
-    unpack_args(args->buffer, size, args->args);
+  readn(fd, &count, sizeof (int));
+  sv->svec = xmalloc(++count * sizeof (char *));
+  size = read_block(fd, &(sv->buffer));
+  if (size > 0)  unpack_svec(sv, size);
   return size;
 }
 
@@ -212,20 +211,20 @@ int read_block(int fd, char **buffer)
   return size;
 }
 
-// Unpack string vector written by write_args
+// Unpack string vector written by write_sv
 
-int unpack_args(char buffer[], int size, char *args[])
+int unpack_svec(sv *sv, int size)
 {
-  int index, arg;
+  int ch, seg;
 
-  index = arg = 0;
-  args[arg++] = buffer;
-  while (index < size) {
-    if (buffer[index++])  continue;
-    args[arg++] = buffer+index;
+  ch = seg = 0;
+  sv->svec[seg++] = sv->buffer;
+  while (ch < size) {
+    if (sv->buffer[ch++])  continue;
+    sv->svec[seg++] = sv->buffer+ch;
   }
-  args[--arg] = NULL;
-  return arg;
+  sv->svec[--seg] = NULL;
+  return seg;
 }
 
 // Write an integer to a file descriptor

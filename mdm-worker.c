@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 02:02:30 cklin>
+// Time-stamp: <2009-02-06 22:25:43 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -25,12 +25,12 @@ int hookup(const char *sockdir)
 
 int main(int argc, char *argv[])
 {
-  struct argv cmd, env;
-  char        *cwd;
-  int         op;
-  int         comm_fd, initwd_fd;
-  int         status;
-  pid_t       pid;
+  sv    cmd, env;
+  char  *cwd;
+  int   op;
+  int   comm_fd, initwd_fd;
+  int   status;
+  pid_t pid;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -47,13 +47,13 @@ int main(int argc, char *argv[])
     pid = fork();
     if (pid == 0) {
       read_block(comm_fd, &cwd);
-      read_args(comm_fd, &cmd);
-      read_args(comm_fd, &env);
+      read_sv(comm_fd, &cmd);
+      read_sv(comm_fd, &env);
       close(comm_fd);
 
       chdir(cwd);
-      environ = env.args;
-      execvp(cmd.args[0], cmd.args);
+      environ = env.svec;
+      execvp(cmd.svec[0], cmd.svec);
     }
     wait(&status);
     write_int(comm_fd, status);
