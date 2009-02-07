@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 00:43:58 cklin>
+// Time-stamp: <2009-02-07 09:15:54 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -80,16 +80,13 @@ static void init_mesg(const char sockdir[])
 static void run_main(const char *addr, char *const argv[])
 {
   int   master_fd, status;
-  pid_t pid;
 
-  pid = fork();
-  if (pid == 0) {
-    pid = fork();
-    if (pid == 0) {
-      setenv(CMD_SOCK_VAR, addr, 1);
+  if (fork() == 0) {
+    close(fetch_fd);
+    setenv(CMD_SOCK_VAR, addr, 1);
+    if (fork() == 0)
       if (execvp(*argv, argv) < 0)
         err(3, "execvp: %s", *argv);
-    }
     wait(&status);
     master_fd = cli_conn(addr);
     write_int(master_fd, 0);
@@ -159,9 +156,9 @@ int main(int argc, char *argv[])
   sockdir = *(++argv);
 
   fetch_addr = init_fetch(sockdir);
+  run_main(fetch_addr, argv+1);
   issue_fd = init_issue(sockdir);
   init_mesg(sockdir);
-  run_main(fetch_addr, argv+1);
 
   wind_down = false;
   while (sc > 0 || !wind_down) {
