@@ -1,17 +1,15 @@
-// Time-stamp: <2009-02-06 23:43:03 cklin>
+// Time-stamp: <2009-02-07 00:03:53 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include <err.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include "middleman.h"
 
 extern char **environ;
@@ -47,11 +45,10 @@ void slave_exit(int slave)
 
 static bool wind_down;
 static int  fetch_fd;
-static FILE *log;
 
 void issue(int slave)
 {
-  int opcode, run_fd, index;
+  int opcode, run_fd;
   int slave_fd = slaves[slave].issue_fd;
   job job;
 
@@ -77,35 +74,29 @@ void issue(int slave)
   write_int(slave_fd, 1);
   write_job(slave_fd, &job);
 
-  fprintf(log, "[%5d]", slaves[slave].pid);
-  for (index=0; job.cmd.svec[index]; index++)
-    fprintf(log, " %s", job.cmd.svec[index]);
-  fprintf(log, "\n");
-
+  warnx("[%5d] %s", slaves[slave].pid, job.cmd.svec[0]);
   release_job(&job);
 }
 
 void get_status(int slave)
 {
   int status;
+
   if (readn(slaves[slave].issue_fd, &status, sizeof (int))) {
-    fprintf(log, "[%5d] done, status %d\n",
-            slaves[slave].pid, status);
+    warnx("[%5d] done, status %d\n", slaves[slave].pid, status);
     issue(slave);
   }
   else {
-    fprintf(log, "[%5d] lost connection\n",
-            slaves[slave].pid);
+    warnx("[%5d] lost connection\n", slaves[slave].pid);
     slave_exit(slave);
   }
 }
 
 int main(int argc, char *argv[])
 {
-  char      *fetch_addr;
+  char      *sockdir, *fetch_addr;
   pid_t     pid;
   int       listenfd;
-  char      *sockdir;
   int       slave;
 
   if (argc < 3)
@@ -127,11 +118,12 @@ int main(int argc, char *argv[])
   }
 
   {
-    char *log_file = path_join(sockdir, LOG_FILE);
-    log = fopen(log_file, "w+");
-    if (log == NULL)  err(3, "Log file %s", log_file);
-    setvbuf(log, NULL, _IONBF, 0);
-    free(log_file);
+    char *msgs_file = path_join(sockdir, LOG_FILE);
+    int msgs_fd = open(msgs_file, O_WRONLY | O_CREAT);
+    if (msgs_fd == -1)  err(2, "Log file %s", msgs_file);
+    dup2(msgs_fd, STDERR_FILENO);
+    close(msgs_fd);
+    free(msgs_file);
   }
 
   pid = fork();
@@ -141,7 +133,7 @@ int main(int argc, char *argv[])
     if (pid == 0) {
       setenv(CMD_SOCK_VAR, fetch_addr, 1);
       if (execvp(*argv, ++argv) < 0)
-        err(9, "execvp: %s", *argv);
+        err(3, "execvp: %s", *argv);
     }
     wait(&status);
     core_fd = cli_conn(fetch_addr);
@@ -160,19 +152,17 @@ int main(int argc, char *argv[])
         get_status(slave);
 
     if (FD_ISSET(listenfd, &readfds)) {
-      int new_fd;
-      new_fd = serv_accept(listenfd);
+      int new_fd = serv_accept(listenfd);
       if (sc == MAX_SLAVES)
         close(new_fd);
       else {
         pid_t slave_pid;
         readn(new_fd, &slave_pid, sizeof (pid_t));
         slave_init(new_fd, slave_pid);
-        fprintf(log, "[%5d] online!\n", pid);
+        warnx("[%5d] online!\n", pid);
         issue(sc-1);
       }
     }
   }
-
   return 0;
 }
