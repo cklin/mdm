@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:07:59 cklin>
+// Time-stamp: <2009-02-07 13:26:54 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -61,7 +61,6 @@ static int init_issue(void)
   char *issue_addr = path_join(sockdir, ISSUE_SOCK);
   int  issue_fd = serv_listen(issue_addr);
 
-  FD_SET(issue_fd, &openfds);
   maxfd = issue_fd;
   free(issue_addr);
   return issue_fd;
@@ -184,6 +183,8 @@ int main(int argc, char *argv[])
   wind_down = false;
   while (sc > 0 || !wind_down) {
     fd_set readfds = openfds;
+    if (sc < MAX_SLAVES && !wind_down)
+      FD_SET(issue_fd, &readfds);
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
@@ -202,16 +203,12 @@ int main(int argc, char *argv[])
     }
 
     if (FD_ISSET(issue_fd, &readfds)) {
-      int slave_fd = serv_accept(issue_fd);
-      if (sc == MAX_SLAVES)
-        close(slave_fd);
-      else {
-        pid_t slave_pid;
-        readn(slave_fd, &slave_pid, sizeof (pid_t));
-        slave_init(slave_fd, slave_pid);
-        warnx("[%5d] online!", slave_pid);
-        issue(sc-1);
-      }
+      int   slave_fd = serv_accept(issue_fd);
+      pid_t slave_pid;
+      readn(slave_fd, &slave_pid, sizeof (pid_t));
+      slave_init(slave_fd, slave_pid);
+      warnx("[%5d] online!", slave_pid);
+      issue(sc-1);
     }
   }
   kill(main_pid, SIGALRM);
