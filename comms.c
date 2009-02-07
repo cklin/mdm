@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 02:05:37 cklin>
+// Time-stamp: <2009-02-06 22:05:56 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -159,6 +159,7 @@ int write_args(int fd, const char *args[])
 
   for (index=0, size=0; args[index]; index++, size++)
     size += strlen(args[index]);
+  write_int(fd, index);
   write_int(fd, size);
   for (index=0; args[index]; index++)
     writen(fd, args[index], strlen(args[index])+1);
@@ -169,8 +170,10 @@ int write_args(int fd, const char *args[])
 
 int read_args(int fd, struct argv *args)
 {
-  int size;
+  int size, argc;
 
+  readn(fd, &argc, sizeof (int));
+  args->args = xmalloc((argc+1) * sizeof (char *));
   size = read_block(fd, &(args->buffer));
   if (size > 0)
     unpack_args(args->buffer, size, args->args);
@@ -218,10 +221,6 @@ int unpack_args(char buffer[], int size, char *args[])
   index = arg = 0;
   args[arg++] = buffer;
   while (index < size) {
-    if (arg >= MAX_ARG_COUNT) {
-      warnx("unpack_args: too many segments");
-      return -1;
-    }
     if (buffer[index++])  continue;
     args[arg++] = buffer+index;
   }

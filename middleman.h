@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 02:05:53 cklin>
+// Time-stamp: <2009-02-06 22:04:03 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 #define MAX_WORKERS   4
-#define MAX_ARG_COUNT 256
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
 #define FETCH_SOCK    "fetch"
@@ -15,7 +14,7 @@
 
 struct argv {
   char *buffer;
-  char *args[MAX_ARG_COUNT];
+  char **args;
 };
 
 int write_args(int fd, const char *args[]);

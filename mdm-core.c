@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-05 02:02:04 cklin>
+// Time-stamp: <2009-02-06 22:02:47 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -82,14 +82,16 @@ void issue(int widx, int fetch_fd)
   write_args(worker_fd, (const char **) cmd.args);
   write_args(worker_fd, (const char **) env.args);
 
-  free(cwd);
-  free(cmd.buffer);
-  free(env.buffer);
-
   fprintf(log, "[%5d]", workers[widx].pid);
   for (index=0; cmd.args[index]; index++)
     fprintf(log, " %s", cmd.args[index]);
   fprintf(log, "\n");
+
+  free(cwd);
+  free(cmd.args);
+  free(cmd.buffer);
+  free(env.args);
+  free(env.buffer);
 }
 
 void get_status(int widx, int fetch_fd)
