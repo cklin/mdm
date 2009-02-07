@@ -3,6 +3,7 @@
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
 cat <<EOF >> "$TMPFILE/screenrc"
 screen mdm-slave "$TMPFILE"
+sleep 1
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
