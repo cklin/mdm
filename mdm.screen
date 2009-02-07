@@ -2,7 +2,7 @@
 
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
 cat <<EOF >> "$TMPFILE/screenrc"
-screen socat - "$TMPFILE/console"
+screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"

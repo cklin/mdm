@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 10:55:54 cklin>
+// Time-stamp: <2009-02-07 12:53:02 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -78,48 +78,43 @@ static void init_mesg(void)
   free(mesg_file);
 }
 
-static int init_console(void)
+static void sig_usr1(int signo)
 {
-  char *con_addr = path_join(sockdir, CON_SOCK);
-  int  con_fd = serv_listen(con_addr);
-
-  free(con_addr);
-  return con_fd;
+  return;
 }
 
-static void sock_console(int con_fd)
+static pid_t run_main(int issue_fd, const char *addr, char *argv[])
 {
-  int tty_fd = serv_accept(con_fd);
+  pid_t main_pid;
+  job   job;
+  int   main_fd, master_fd, status;
 
-  dup2(tty_fd, STDIN_FILENO);
-  dup2(tty_fd, STDOUT_FILENO);
-  dup2(tty_fd, STDERR_FILENO);
-  close(tty_fd);
-}
-
-static pid_t run_main(const char *addr, char *const argv[])
-{
-  pid_t run_pid;
-  int   con_fd, master_fd, status;
-
-  con_fd = init_console();
-  run_pid = fork();
-  if (run_pid == 0) {
-    setenv(CMD_SOCK_VAR, addr, 1);
-    sock_console(con_fd);
-    close(con_fd);
+  main_fd = serv_accept(issue_fd);
+  main_pid = fork();
+  if (main_pid == 0) {
     close(fetch_fd);
-    if (fork() == 0)
-      if (execvp(*argv, argv) < 0)
-        err(3, "execvp: %s", *argv);
-    wait(&status);
+    close(issue_fd);
+
+    setenv(CMD_SOCK_VAR, addr, 1);
+    job.cwd = get_current_dir_name();
+    job.cmd.svec = argv;
+    job.env.svec = environ;
+
+    readn(main_fd, &status, sizeof (pid_t));
+    write_int(main_fd, 1);
+    write_job(main_fd, &job);
+    readn(main_fd, &status, sizeof (int));
+
     master_fd = cli_conn(addr);
     write_int(master_fd, 0);
+    signal(SIGTERM, sig_usr1);
     pause();
+
+    write_int(main_fd, 0);
     exit(status);
   }
-  close(con_fd);
-  return run_pid;
+  close(main_fd);
+  return main_pid;
 }
 
 static bool get_status(int slave)
@@ -176,7 +171,7 @@ static void issue(int slave)
 int main(int argc, char *argv[])
 {
   char  *fetch_addr;
-  pid_t run_pid;
+  pid_t main_pid;
   int   issue_fd;
   int   slave;
 
@@ -184,11 +179,11 @@ int main(int argc, char *argv[])
     errx(1, "Need comms directory and command");
   sockdir = *(++argv);
 
-  fetch_addr = init_fetch();
-  run_pid = run_main(fetch_addr, argv+1);
   issue_fd = init_issue();
-  daemon(0, 0);
+  daemon(1, 0);
   init_mesg();
+  fetch_addr = init_fetch();
+  main_pid = run_main(issue_fd, fetch_addr, argv+1);
 
   wind_down = false;
   while (sc > 0 || !wind_down) {
@@ -215,6 +210,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-  kill(run_pid, SIGTERM);
+  kill(main_pid, SIGTERM);
   return 0;
 }
