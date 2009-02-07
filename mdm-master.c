@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 10:33:56 cklin>
+// Time-stamp: <2009-02-07 10:46:26 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -97,12 +97,14 @@ static void sock_console(int con_fd)
   close(tty_fd);
 }
 
-static void run_main(const char *addr, char *const argv[])
+static pid_t run_main(const char *addr, char *const argv[])
 {
+  pid_t run_pid;
   int   con_fd, master_fd, status;
 
   con_fd = init_console();
-  if (fork() == 0) {
+  run_pid = fork();
+  if (run_pid == 0) {
     setenv(CMD_SOCK_VAR, addr, 1);
     sock_console(con_fd);
     close(con_fd);
@@ -113,9 +115,11 @@ static void run_main(const char *addr, char *const argv[])
     wait(&status);
     master_fd = cli_conn(addr);
     write_int(master_fd, 0);
+    pause();
     exit(status);
   }
   close(con_fd);
+  return run_pid;
 }
 
 static bool get_status(int slave)
@@ -171,16 +175,17 @@ static void issue(int slave)
 
 int main(int argc, char *argv[])
 {
-  char *fetch_addr;
-  int  issue_fd;
-  int  slave;
+  char  *fetch_addr;
+  pid_t run_pid;
+  int   issue_fd;
+  int   slave;
 
   if (argc < 3)
     errx(1, "Need comms directory and command");
   sockdir = *(++argv);
 
   fetch_addr = init_fetch();
-  run_main(fetch_addr, argv+1);
+  run_pid = run_main(fetch_addr, argv+1);
   issue_fd = init_issue();
   daemon(0, 0);
   init_mesg();
@@ -210,5 +215,6 @@ int main(int argc, char *argv[])
       }
     }
   }
+  kill(run_pid, SIGTERM);
   return 0;
 }
