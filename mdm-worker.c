@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:31:21 cklin>
+// Time-stamp: <2009-02-06 23:33:21 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -6,7 +6,6 @@
 #include <err.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include "middleman.h"
 
 extern char **environ;
@@ -26,14 +25,12 @@ int hookup(const char *sockdir)
 int main(int argc, char *argv[])
 {
   job   job;
-  int   master_fd, initwd_fd;
-  int   op, status;
+  int   master_fd, op, status;
   pid_t pid;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
 
-  initwd_fd = open(".", O_RDONLY);
   master_fd = hookup(argv[1]);
   write_int(master_fd, getpid());
 
@@ -53,7 +50,5 @@ int main(int argc, char *argv[])
     wait(&status);
     write_int(master_fd, status);
   }
-
-  fchdir(initwd_fd);
   return 0;
 }
