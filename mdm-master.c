@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:26:54 cklin>
+// Time-stamp: <2009-02-07 13:38:51 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -43,18 +43,7 @@ static void slave_exit(int slave)
   close(slave_fd);
 }
 
-static int  fetch_fd;
 static char *sockdir;
-
-static char *init_fetch(void)
-{
-  char *fetch_addr;
-
-  check_sockdir(sockdir);
-  fetch_addr = path_join(sockdir, FETCH_SOCK);
-  fetch_fd = serv_listen(fetch_addr);
-  return fetch_addr;
-}
 
 static int init_issue(void)
 {
@@ -75,6 +64,16 @@ static void init_mesg_log(void)
   dup2(mesg_fd, STDERR_FILENO);
   close(mesg_fd);
   free(mesg_file);
+}
+
+static int fetch_fd;
+
+static char *init_fetch(void)
+{
+  char *fetch_addr = path_join(sockdir, FETCH_SOCK);
+
+  fetch_fd = serv_listen(fetch_addr);
+  return fetch_addr;
 }
 
 static void sig_alarm(int signo)
@@ -173,6 +172,7 @@ int main(int argc, char *argv[])
   if (argc < 3)
     errx(1, "Need comms directory and command");
   sockdir = *(++argv);
+  check_sockdir(sockdir);
 
   issue_fd = init_issue();
   daemon(1, 0);
