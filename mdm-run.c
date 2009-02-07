@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:24:35 cklin>
+// Time-stamp: <2009-02-06 22:57:55 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -12,8 +12,9 @@ extern char **environ;
 int main(int argc, char *argv[])
 {
   struct stat sock_stat;
-  char        *cwd, *core_addr;
+  char        *core_addr;
   int         core_fd, status;
+  job         job;
 
   if (argc < 2)
     errx(1, "Please supply command as arguments");
@@ -35,10 +36,10 @@ int main(int argc, char *argv[])
     errx(7, "%s: cli_conn error", core_addr);
 
   write_int(core_fd, 1);
-  cwd = get_current_dir_name();
-  write_string(core_fd, cwd);
-  write_sv(core_fd, (const char **) ++argv);
-  write_sv(core_fd, (const char **) environ);
+  job.cwd = get_current_dir_name();
+  job.cmd.svec = ++argv;
+  job.env.svec = environ;
+  write_job(core_fd, &job);
   readn(core_fd, &status, sizeof (int));
   close(core_fd);
 

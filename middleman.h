@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:26:59 cklin>
+// Time-stamp: <2009-02-06 23:10:05 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -17,12 +17,13 @@ typedef struct {
   char **svec;
 } sv;
 
-int read_block(int fd, char **buffer);
-int read_sv(int fd, sv *sv);
-int unpack_svec(sv *sv, int size);
+typedef struct {
+  sv   cmd, env;
+  char *cwd;
+} job;
 
-int write_string(int fd, const char buffer[]);
-int write_sv(int fd, const char *svec[]);
+void read_job(int fd, job *job);
+void write_job(int fd, const job *job);
 
 ssize_t readn(int fd, void *vptr, size_t n);
 ssize_t writen(int fd, const void *vptr, size_t n);
@@ -36,6 +37,6 @@ void check_sockdir(const char *path);
 
 void *xmalloc(size_t size);
 char *path_join(const char *path, const char *name);
-void release_sv(sv *sv);
+void release_job(job *job);
 
 #endif

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:26:28 cklin>
+// Time-stamp: <2009-02-06 22:55:51 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -149,6 +149,20 @@ void check_sockdir(const char *path)
     errx(2, "%s is not a directory", path);
   if (st.st_mode & S_IWOTH)
     errx(2, "%s is world-writable", path);
+}
+
+void write_job(int fd, const job *job)
+{
+  write_string(fd, job->cwd);
+  write_sv(fd, (const char **) job->cmd.svec);
+  write_sv(fd, (const char **) job->env.svec);
+}
+
+void read_job(int fd, job *job)
+{
+  read_block(fd, &(job->cwd));
+  read_sv(fd, &(job->cmd));
+  read_sv(fd, &(job->env));
 }
 
 // Write NULL-terminated string vector to file descriptor

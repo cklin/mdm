@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:25:43 cklin>
+// Time-stamp: <2009-02-06 23:04:58 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -14,7 +14,7 @@ extern char **environ;
 int hookup(const char *sockdir)
 {
   char *master_addr;
-  int status;
+  int  status;
 
   check_sockdir(sockdir);
   master_addr = path_join(sockdir, ISSUE_SOCK);
@@ -25,8 +25,7 @@ int hookup(const char *sockdir)
 
 int main(int argc, char *argv[])
 {
-  sv    cmd, env;
-  char  *cwd;
+  job   job;
   int   op;
   int   comm_fd, initwd_fd;
   int   status;
@@ -46,14 +45,12 @@ int main(int argc, char *argv[])
 
     pid = fork();
     if (pid == 0) {
-      read_block(comm_fd, &cwd);
-      read_sv(comm_fd, &cmd);
-      read_sv(comm_fd, &env);
+      read_job(comm_fd, &job);
       close(comm_fd);
 
-      chdir(cwd);
-      environ = env.svec;
-      execvp(cmd.svec[0], cmd.svec);
+      chdir(job.cwd);
+      environ = job.env.svec;
+      execvp(job.cmd.svec[0], job.cmd.svec);
     }
     wait(&status);
     write_int(comm_fd, status);

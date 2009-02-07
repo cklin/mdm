@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:24:00 cklin>
+// Time-stamp: <2009-02-06 23:01:04 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -50,11 +50,9 @@ static FILE *log;
 
 void issue(int widx, int fetch_fd)
 {
-  int  opcode, run_fd, index;
-  int  worker_fd = workers[widx].fd;
-
-  sv   cmd, env;
-  char *cwd;
+  int opcode, run_fd, index;
+  int worker_fd = workers[widx].fd;
+  job job;
 
   if (!wind_down) {
     run_fd = serv_accept(fetch_fd);
@@ -71,25 +69,19 @@ void issue(int widx, int fetch_fd)
     return;
   }
 
-  read_block(run_fd, &cwd);
-  read_sv(run_fd, &cmd);
-  read_sv(run_fd, &env);
+  read_job(run_fd, &job);
   write_int(run_fd, 0);
   close(run_fd);
 
   write_int(worker_fd, 1);
-  write_string(worker_fd, cwd);
-  write_sv(worker_fd, (const char **) cmd.svec);
-  write_sv(worker_fd, (const char **) env.svec);
+  write_job(worker_fd, &job);
 
   fprintf(log, "[%5d]", workers[widx].pid);
-  for (index=0; cmd.svec[index]; index++)
-    fprintf(log, " %s", cmd.svec[index]);
+  for (index=0; job.cmd.svec[index]; index++)
+    fprintf(log, " %s", job.cmd.svec[index]);
   fprintf(log, "\n");
 
-  free(cwd);
-  release_sv(&cmd);
-  release_sv(&env);
+  release_job(&job);
 }
 
 void get_status(int widx, int fetch_fd)
