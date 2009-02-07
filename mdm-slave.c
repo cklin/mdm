@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:33:21 cklin>
+// Time-stamp: <2009-02-07 00:44:37 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -10,7 +10,7 @@
 
 extern char **environ;
 
-int hookup(const char *sockdir)
+static int hookup(const char *sockdir)
 {
   char *master_addr;
   int  master_fd;

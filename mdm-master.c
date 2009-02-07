@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 00:41:55 cklin>
+// Time-stamp: <2009-02-07 00:43:58 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -10,11 +10,6 @@
 #include <stdlib.h>
 #include "middleman.h"
 
-extern char **environ;
-
-static fd_set openfds;
-static int    maxfd;
-
 typedef struct {
   int   issue_fd;
   pid_t pid;
@@ -22,10 +17,11 @@ typedef struct {
 
 #define GOOD_SLAVE(x) (0 <= (x) && (x) < sc)
 
-static slave slaves[MAX_SLAVES];
-static int   sc;
+static slave  slaves[MAX_SLAVES];
+static fd_set openfds;
+static int    maxfd, sc;
 
-void slave_init(int fd, pid_t pid)
+static void slave_init(int fd, pid_t pid)
 {
   assert(sc < MAX_SLAVES);
   slaves[sc].issue_fd = fd;
@@ -34,7 +30,7 @@ void slave_init(int fd, pid_t pid)
   if (fd > maxfd)  maxfd = fd;
 }
 
-void slave_exit(int slave)
+static void slave_exit(int slave)
 {
   int slave_fd;
 
@@ -49,7 +45,7 @@ void slave_exit(int slave)
 
 static int fetch_fd;
 
-char *init_fetch(const char sockdir[])
+static char *init_fetch(const char sockdir[])
 {
   char *fetch_addr;
 
@@ -59,7 +55,7 @@ char *init_fetch(const char sockdir[])
   return fetch_addr;
 }
 
-int init_issue(const char sockdir[])
+static int init_issue(const char sockdir[])
 {
   char *issue_addr = path_join(sockdir, ISSUE_SOCK);
   int  issue_fd = serv_listen(issue_addr);
@@ -70,7 +66,7 @@ int init_issue(const char sockdir[])
   return issue_fd;
 }
 
-void init_mesg(const char sockdir[])
+static void init_mesg(const char sockdir[])
 {
   char *mesg_file = path_join(sockdir, LOG_FILE);
   int mesg_fd = open(mesg_file, O_WRONLY | O_CREAT);
@@ -81,7 +77,7 @@ void init_mesg(const char sockdir[])
   free(mesg_file);
 }
 
-void run_main(const char *addr, char *const argv[])
+static void run_main(const char *addr, char *const argv[])
 {
   int   master_fd, status;
   pid_t pid;
@@ -101,7 +97,7 @@ void run_main(const char *addr, char *const argv[])
   }
 }
 
-bool get_status(int slave)
+static bool get_status(int slave)
 {
   int status;
   int n = readn(slaves[slave].issue_fd, &status, sizeof (int));
@@ -113,7 +109,7 @@ bool get_status(int slave)
 
 static bool wind_down;
 
-int accept_run(void)
+static int accept_run(void)
 {
   int run_fd, opcode;
 
@@ -127,7 +123,7 @@ int accept_run(void)
   return run_fd;
 }
 
-void issue(int slave)
+static void issue(int slave)
 {
   int slave_fd = slaves[slave].issue_fd;
   int run_fd;
