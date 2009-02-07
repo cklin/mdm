@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 10:10:31 cklin>
+// Time-stamp: <2009-02-07 10:33:56 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -94,18 +94,19 @@ static void sock_console(int con_fd)
   dup2(tty_fd, STDIN_FILENO);
   dup2(tty_fd, STDOUT_FILENO);
   dup2(tty_fd, STDERR_FILENO);
-  close(con_fd);
   close(tty_fd);
 }
 
-static void run_main(int con_fd, const char *addr, char *const argv[])
+static void run_main(const char *addr, char *const argv[])
 {
-  int   master_fd, status;
+  int   con_fd, master_fd, status;
 
+  con_fd = init_console();
   if (fork() == 0) {
-    close(fetch_fd);
-    sock_console(con_fd);
     setenv(CMD_SOCK_VAR, addr, 1);
+    sock_console(con_fd);
+    close(con_fd);
+    close(fetch_fd);
     if (fork() == 0)
       if (execvp(*argv, argv) < 0)
         err(3, "execvp: %s", *argv);
@@ -171,7 +172,7 @@ static void issue(int slave)
 int main(int argc, char *argv[])
 {
   char *fetch_addr;
-  int  issue_fd, con_fd;
+  int  issue_fd;
   int  slave;
 
   if (argc < 3)
@@ -179,8 +180,7 @@ int main(int argc, char *argv[])
   sockdir = *(++argv);
 
   fetch_addr = init_fetch();
-  con_fd = init_console();
-  run_main(con_fd, fetch_addr, argv+1);
+  run_main(fetch_addr, argv+1);
   issue_fd = init_issue();
   daemon(0, 0);
   init_mesg();
