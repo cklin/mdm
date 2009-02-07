@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:17:01 cklin>
+// Time-stamp: <2009-02-07 00:39:44 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -221,7 +221,7 @@ int write_string(int fd, const char buffer[])
 
 // Write NULL-terminated string vector to file descriptor
 
-int write_sv(int fd, const char *svec[])
+int write_sv(int fd, char *const svec[])
 {
   int index, size;
 
@@ -244,7 +244,7 @@ void read_job(int fd, job *job)
 void write_job(int fd, const job *job)
 {
   write_string(fd, job->cwd);
-  write_sv(fd, (const char **) job->cmd.svec);
-  write_sv(fd, (const char **) job->env.svec);
+  write_sv(fd, job->cmd.svec);
+  write_sv(fd, job->env.svec);
 }
 
