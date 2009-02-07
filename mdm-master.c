@@ -1,9 +1,7 @@
-// Time-stamp: <2009-02-07 00:36:46 cklin>
+// Time-stamp: <2009-02-07 00:41:55 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <err.h>
