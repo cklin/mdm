@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:00:29 cklin>
+// Time-stamp: <2009-02-07 13:40:36 cklin>
 
 #include <err.h>
 #include <stdlib.h>
@@ -23,7 +23,7 @@ char *path_join(const char *path, const char *name)
   if (path[0] != '/')
     errx(102, "Relative path argument 1 in path_join");
   if (strchr(name, '/'))
-    errx(102, "Relative path argument 2 in path_join");
+    errx(103, "Relative path argument 2 in path_join");
 
   path_len = strlen(path);
   name_len = strlen(name);

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 10:35:33 cklin>
+// Time-stamp: <2009-02-07 13:41:48 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -22,18 +22,18 @@ int main(int argc, char *argv[])
   master_addr = getenv(CMD_SOCK_VAR);
   if (!master_addr)
     if (execvp(*argv, ++argv) < 0)
-      errx(8, "execve: %s", *argv);
+      errx(2, "execve: %s", *argv);
 
   if (lstat(master_addr, &sock_stat) < 0)
-    err(4, "%s: Cannot stat master socket", master_addr);
+    err(3, "%s: Cannot stat master socket", master_addr);
   if (!S_ISSOCK(sock_stat.st_mode))
-    errx(5, "%s: Not a socket", master_addr);
+    errx(4, "%s: Not a socket", master_addr);
   if (sock_stat.st_uid != geteuid())
-    errx(6, "%s: Belongs to someone else", master_addr);
+    errx(5, "%s: Belongs to someone else", master_addr);
 
   master_fd = cli_conn(master_addr);
   if (master_fd < 0)
-    errx(7, "%s: cli_conn error", master_addr);
+    errx(6, "%s: cli_conn error", master_addr);
 
   write_int(master_fd, 1);
   job.cwd = get_current_dir_name();

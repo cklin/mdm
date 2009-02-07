@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 08:57:36 cklin>
+// Time-stamp: <2009-02-07 13:42:08 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -149,9 +149,9 @@ void check_sockdir(const char *path)
   struct stat st;
 
   if (lstat(path, &st) < 0)
-    err(2, "stat(\"%s\")", path);
+    err(110, "stat(\"%s\")", path);
   if (! S_ISDIR(st.st_mode))
-    errx(2, "%s is not a directory", path);
+    errx(111, "%s is not a directory", path);
   if (st.st_mode & S_IWOTH)
-    errx(2, "%s is world-writable", path);
+    errx(112, "%s is world-writable", path);
 }

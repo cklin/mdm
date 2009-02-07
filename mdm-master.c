@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:38:51 cklin>
+// Time-stamp: <2009-02-07 13:42:22 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
     if (sc < MAX_SLAVES && !wind_down)
       FD_SET(issue_fd, &readfds);
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
-      err(4, "select");
+      err(3, "select");
 
     for (slave=sc-1; slave>=0; slave--) {
       slv = &slaves[slave];
