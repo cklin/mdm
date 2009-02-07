@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:04:59 cklin>
+// Time-stamp: <2009-02-07 13:07:59 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -78,7 +78,7 @@ static void init_mesg_log(void)
   free(mesg_file);
 }
 
-static void sig_usr1(int signo)
+static void sig_alarm(int signo)
 {
   return;
 }
@@ -107,7 +107,7 @@ static pid_t run_main(int issue_fd, const char *addr, char *argv[])
 
     master_fd = cli_conn(addr);
     write_int(master_fd, 0);
-    signal(SIGTERM, sig_usr1);
+    signal(SIGALRM, sig_alarm);
     pause();
 
     write_int(main_fd, 0);
@@ -214,6 +214,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-  kill(main_pid, SIGTERM);
+  kill(main_pid, SIGALRM);
   return 0;
 }
