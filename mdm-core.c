@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 23:01:04 cklin>
+// Time-stamp: <2009-02-06 23:43:03 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -19,39 +19,40 @@ extern char **environ;
 static fd_set openfds;
 static int    maxfd;
 
-struct worker {
-  int   fd;
+typedef struct {
+  int   issue_fd;
   pid_t pid;
-};
+} slave;
 
-static struct worker workers[MAX_WORKERS];
-static int ready;
+static slave slaves[MAX_SLAVES];
+static int   sc;
 
-#define IS_READY(x) (0 <= (x) && (x) < ready)
+#define GOOD_SLAVE(x) (0 <= (x) && (x) < sc)
 
-void worker_init(int fd, pid_t pid)
+void slave_init(int fd, pid_t pid)
 {
-  assert(ready < MAX_WORKERS);
-  workers[ready].fd = fd;
-  workers[ready++].pid = pid;
+  assert(sc < MAX_SLAVES);
+  slaves[sc].issue_fd = fd;
+  slaves[sc++].pid = pid;
   FD_SET(fd, &openfds);
   if (fd > maxfd)  maxfd = fd;
 }
 
-void worker_exit(int widx)
+void slave_exit(int slave)
 {
-  assert(IS_READY(widx));
-  FD_CLR(workers[widx].fd, &openfds);
-  workers[widx] = workers[--ready];
+  assert(GOOD_SLAVE(slave));
+  FD_CLR(slaves[slave].issue_fd, &openfds);
+  slaves[slave] = slaves[--sc];
 }
 
 static bool wind_down;
+static int  fetch_fd;
 static FILE *log;
 
-void issue(int widx, int fetch_fd)
+void issue(int slave)
 {
   int opcode, run_fd, index;
-  int worker_fd = workers[widx].fd;
+  int slave_fd = slaves[slave].issue_fd;
   job job;
 
   if (!wind_down) {
@@ -63,9 +64,9 @@ void issue(int widx, int fetch_fd)
     }
   }
   if (wind_down) {
-    write_int(worker_fd, 0);
-    close(worker_fd);
-    worker_exit(widx);
+    write_int(slave_fd, 0);
+    close(slave_fd);
+    slave_exit(slave);
     return;
   }
 
@@ -73,10 +74,10 @@ void issue(int widx, int fetch_fd)
   write_int(run_fd, 0);
   close(run_fd);
 
-  write_int(worker_fd, 1);
-  write_job(worker_fd, &job);
+  write_int(slave_fd, 1);
+  write_job(slave_fd, &job);
 
-  fprintf(log, "[%5d]", workers[widx].pid);
+  fprintf(log, "[%5d]", slaves[slave].pid);
   for (index=0; job.cmd.svec[index]; index++)
     fprintf(log, " %s", job.cmd.svec[index]);
   fprintf(log, "\n");
@@ -84,18 +85,18 @@ void issue(int widx, int fetch_fd)
   release_job(&job);
 }
 
-void get_status(int widx, int fetch_fd)
+void get_status(int slave)
 {
   int status;
-  if (readn(workers[widx].fd, &status, sizeof (int))) {
+  if (readn(slaves[slave].issue_fd, &status, sizeof (int))) {
     fprintf(log, "[%5d] done, status %d\n",
-            workers[widx].pid, status);
-    issue(widx, fetch_fd);
+            slaves[slave].pid, status);
+    issue(slave);
   }
   else {
     fprintf(log, "[%5d] lost connection\n",
-            workers[widx].pid);
-    worker_exit(widx);
+            slaves[slave].pid);
+    slave_exit(slave);
   }
 }
 
@@ -103,9 +104,9 @@ int main(int argc, char *argv[])
 {
   char      *fetch_addr;
   pid_t     pid;
-  int       listenfd, fetch_fd;
+  int       listenfd;
   char      *sockdir;
-  int       widx;
+  int       slave;
 
   if (argc < 3)
     errx(1, "Need comms directory and command");
@@ -149,26 +150,26 @@ int main(int argc, char *argv[])
   }
 
   wind_down = false;
-  while (ready > 0 || !wind_down) {
+  while (sc > 0 || !wind_down) {
     fd_set readfds = openfds;
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
-    for (widx=ready-1; widx>=0; widx--)
-      if (FD_ISSET(workers[widx].fd, &readfds))
-        get_status(widx, fetch_fd);
+    for (slave=sc-1; slave>=0; slave--)
+      if (FD_ISSET(slaves[slave].issue_fd, &readfds))
+        get_status(slave);
 
     if (FD_ISSET(listenfd, &readfds)) {
       int new_fd;
       new_fd = serv_accept(listenfd);
-      if (ready == MAX_WORKERS)
+      if (sc == MAX_SLAVES)
         close(new_fd);
       else {
-        pid_t worker_pid;
-        readn(new_fd, &worker_pid, sizeof (pid_t));
-        worker_init(new_fd, worker_pid);
+        pid_t slave_pid;
+        readn(new_fd, &slave_pid, sizeof (pid_t));
+        slave_init(new_fd, slave_pid);
         fprintf(log, "[%5d] online!\n", pid);
-        issue(ready-1, fetch_fd);
+        issue(sc-1);
       }
     }
   }

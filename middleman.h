@@ -1,11 +1,11 @@
-// Time-stamp: <2009-02-06 23:13:02 cklin>
+// Time-stamp: <2009-02-06 23:36:58 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
 
 #include <unistd.h>
 
-#define MAX_WORKERS   4
+#define MAX_SLAVES    4
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
 #define FETCH_SOCK    "fetch"
