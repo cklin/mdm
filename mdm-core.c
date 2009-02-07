@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:02:47 cklin>
+// Time-stamp: <2009-02-06 22:10:00 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -88,10 +88,8 @@ void issue(int widx, int fetch_fd)
   fprintf(log, "\n");
 
   free(cwd);
-  free(cmd.args);
-  free(cmd.buffer);
-  free(env.args);
-  free(env.buffer);
+  release_argv(&cmd);
+  release_argv(&env);
 }
 
 void get_status(int widx, int fetch_fd)

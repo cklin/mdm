@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-06 22:04:03 cklin>
+// Time-stamp: <2009-02-06 22:09:37 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -36,5 +36,6 @@ void check_sockdir(const char *path);
 
 void *xmalloc(size_t size);
 char *path_join(const char *path, const char *name);
+void release_argv(struct argv *sv);
 
 #endif

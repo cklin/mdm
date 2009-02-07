@@ -1,8 +1,9 @@
-// Time-stamp: <2009-02-05 01:58:22 cklin>
+// Time-stamp: <2009-02-06 22:09:25 cklin>
 
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
+#include "middleman.h"
 
 void *xmalloc(size_t size)
 {
@@ -33,4 +34,10 @@ char *path_join(const char *path, const char *name)
     pathname[path_len++] = '/';
   strcpy(pathname+path_len, name);
   return pathname;
+}
+
+void release_argv(struct argv *sv)
+{
+  free(sv->buffer);
+  free(sv->args);
 }
