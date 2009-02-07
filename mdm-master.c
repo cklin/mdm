@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 10:46:26 cklin>
+// Time-stamp: <2009-02-07 10:55:54 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -70,7 +70,7 @@ static int init_issue(void)
 static void init_mesg(void)
 {
   char *mesg_file = path_join(sockdir, LOG_FILE);
-  int  mesg_fd = open(mesg_file, O_WRONLY | O_CREAT);
+  int  mesg_fd = open(mesg_file, O_WRONLY | O_CREAT, S_IRUSR);
 
   if (mesg_fd == -1)  err(2, "Log file %s", mesg_file);
   dup2(mesg_fd, STDERR_FILENO);
