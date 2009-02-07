@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 12:53:02 cklin>
+// Time-stamp: <2009-02-07 13:04:59 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -11,7 +11,7 @@
 #include "middleman.h"
 
 typedef struct {
-  int   issue_fd;
+  int   issue_fd, status;
   pid_t pid;
 } slave;
 
@@ -67,7 +67,7 @@ static int init_issue(void)
   return issue_fd;
 }
 
-static void init_mesg(void)
+static void init_mesg_log(void)
 {
   char *mesg_file = path_join(sockdir, LOG_FILE);
   int  mesg_fd = open(mesg_file, O_WRONLY | O_CREAT, S_IRUSR);
@@ -117,14 +117,9 @@ static pid_t run_main(int issue_fd, const char *addr, char *argv[])
   return main_pid;
 }
 
-static bool get_status(int slave)
+static int get_status(slave *slv)
 {
-  int status;
-  int n = readn(slaves[slave].issue_fd, &status, sizeof (int));
-
-  if (n)  warnx("[%5d] done (%d)", slaves[slave].pid, status);
-  else  warnx("[%5d] lost", slaves[slave].pid);
-  return (n > 0);
+  return readn(slv->issue_fd, &(slv->status), sizeof (int));
 }
 
 static bool wind_down;
@@ -173,6 +168,7 @@ int main(int argc, char *argv[])
   char  *fetch_addr;
   pid_t main_pid;
   int   issue_fd;
+  slave *slv;
   int   slave;
 
   if (argc < 3)
@@ -181,7 +177,7 @@ int main(int argc, char *argv[])
 
   issue_fd = init_issue();
   daemon(1, 0);
-  init_mesg();
+  init_mesg_log();
   fetch_addr = init_fetch();
   main_pid = run_main(issue_fd, fetch_addr, argv+1);
 
@@ -191,11 +187,19 @@ int main(int argc, char *argv[])
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(4, "select");
 
-    for (slave=sc-1; slave>=0; slave--)
-      if (FD_ISSET(slaves[slave].issue_fd, &readfds)) {
-        if (get_status(slave))  issue(slave);
-        else  slave_exit(slave);
+    for (slave=sc-1; slave>=0; slave--) {
+      slv = &slaves[slave];
+      if (FD_ISSET(slv->issue_fd, &readfds)) {
+        if (get_status(slv) > 0) {
+          warnx("[%5d] done (%d)", slv->pid, slv->status);
+          issue(slave);
+        }
+        else {
+          warnx("[%5d] lost", slv->pid);
+          slave_exit(slave);
+        }
       }
+    }
 
     if (FD_ISSET(issue_fd, &readfds)) {
       int slave_fd = serv_accept(issue_fd);
