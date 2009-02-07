@@ -1,5 +1,5 @@
 syntax: glob
 *.o
-mdm-worker
-mdm-core
+mdm-master
 mdm-run
+mdm-slave

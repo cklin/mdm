@@ -1,9 +1,9 @@
-# Time-stamp: <2009-02-05 02:04:53 cklin>
+# Time-stamp: <2009-02-06 23:44:19 cklin>
 
 CFLAGS = -Wall -D_GNU_SOURCE
 
-all:		mdm-worker mdm-core mdm-run
-mdm-worker:	mdm-worker.c comms.o buffer.o
-mdm-core:	mdm-core.c comms.o buffer.o
+all:		mdm-slave mdm-master mdm-run
+mdm-slave:	mdm-slave.c comms.o buffer.o
+mdm-master:	mdm-master.c comms.o buffer.o
 mdm-run:	mdm-run.c comms.o buffer.o
 .PHONY:		all
