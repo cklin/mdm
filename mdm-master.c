@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-08 10:04:51 cklin>
+// Time-stamp: <2009-02-08 10:08:21 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -137,9 +137,9 @@ static int accept_run(void)
   return run_fd;
 }
 
-static void issue(int slave)
+static void issue(int slave_index)
 {
-  slave *slv = &slaves[slave];
+  slave *slv = &slaves[slave_index];
   int   run_fd;
   job   job;
 
@@ -147,7 +147,7 @@ static void issue(int slave)
     run_fd = accept_run();
   if (wind_down) {
     warnx("[%5d] exit", slv->pid);
-    slave_exit(slave);
+    slave_exit(slave_index);
     return;
   }
 
@@ -167,8 +167,7 @@ int main(int argc, char *argv[])
   char  *fetch_addr;
   pid_t main_pid;
   int   issue_fd;
-  slave *slv;
-  int   slave;
+  int   slave_index;
 
   if (argc < 3)
     errx(1, "Need comms directory and command");
@@ -189,16 +188,16 @@ int main(int argc, char *argv[])
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(3, "select");
 
-    for (slave=sc-1; slave>=0; slave--) {
-      slv = &slaves[slave];
+    for (slave_index=sc-1; slave_index>=0; slave_index--) {
+      slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (get_status(slv) > 0) {
           warnx("[%5d] done (%d)", slv->pid, slv->status);
-          issue(slave);
+          issue(slave_index);
         }
         else {
           warnx("[%5d] lost", slv->pid);
-          slave_exit(slave);
+          slave_exit(slave_index);
         }
       }
     }
