@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:42:22 cklin>
+// Time-stamp: <2009-02-08 10:04:51 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -24,6 +24,7 @@ static int    maxfd, sc;
 static void slave_init(int fd, pid_t pid)
 {
   assert(sc < MAX_SLAVES);
+  slaves[sc].status = 0;
   slaves[sc].issue_fd = fd;
   slaves[sc++].pid = pid;
   FD_SET(fd, &openfds);
@@ -138,26 +139,26 @@ static int accept_run(void)
 
 static void issue(int slave)
 {
-  int slave_fd = slaves[slave].issue_fd;
-  int run_fd;
-  job job;
+  slave *slv = &slaves[slave];
+  int   run_fd;
+  job   job;
 
   if (!wind_down)
     run_fd = accept_run();
   if (wind_down) {
-    warnx("[%5d] exit", slaves[slave].pid);
+    warnx("[%5d] exit", slv->pid);
     slave_exit(slave);
     return;
   }
 
   read_job(run_fd, &job);
-  write_int(run_fd, 0);
+  write_int(run_fd, slv->status);
   close(run_fd);
 
-  write_int(slave_fd, 1);
-  write_job(slave_fd, &job);
+  write_int(slv->issue_fd, 1);
+  write_job(slv->issue_fd, &job);
 
-  warnx("[%5d] > %s", slaves[slave].pid, job.cmd.svec[0]);
+  warnx("[%5d] > %s", slv->pid, job.cmd.svec[0]);
   release_job(&job);
 }
 

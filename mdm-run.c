@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:41:48 cklin>
+// Time-stamp: <2009-02-08 10:02:32 cklin>
 
 #include <sys/stat.h>
 #include <err.h>
@@ -43,5 +43,5 @@ int main(int argc, char *argv[])
   readn(master_fd, &status, sizeof (int));
   close(master_fd);
 
-  return 0;
+  return status;
 }
