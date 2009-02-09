@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-09 00:58:27 cklin>
+// Time-stamp: <2009-02-09 01:20:18 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -23,19 +23,19 @@ static slave  slaves[MAX_SLAVES];
 static fd_set openfds;
 static int    maxfd, sc;
 
-static void slave_init(int fd, pid_t pid)
+static void slave_init(int fd)
 {
   assert(sc < MAX_SLAVES);
   slaves[sc].status = 0;
   slaves[sc].issue_fd = fd;
-  slaves[sc].pid = pid;
+  readn(fd, &(slaves[sc].pid), sizeof (pid_t));
   slaves[sc].idle = true;
   FD_SET(fd, &openfds);
   if (fd > maxfd)  maxfd = fd;
   sc++;
 }
 
-static void slave_exit(int slave)
+static void slave_exit(int slave, bool halt)
 {
   int slave_fd;
 
@@ -45,7 +45,8 @@ static void slave_exit(int slave)
   slaves[slave] = slaves[--sc];
 
   FD_CLR(slave_fd, &openfds);
-  write_int(slave_fd, 0);
+  if (halt)
+    write_int(slave_fd, 0);
   close(slave_fd);
 }
 
@@ -178,7 +179,7 @@ static void process_tick(void)
       }
       else {
         warnx("[%5d] exit", slaves[index].pid);
-        slave_exit(index);
+        slave_exit(index, true);
       }
     }
 }
@@ -218,17 +219,14 @@ int main(int argc, char *argv[])
           warnx("[%5d] done (%d)", slv->pid, slv->status);
         else {
           warnx("[%5d] lost", slv->pid);
-          slave_exit(slave_index);
+          slave_exit(slave_index, false);
         }
       }
     }
 
     if (FD_ISSET(issue_fd, &readfds)) {
-      int   slave_fd = serv_accept(issue_fd);
-      pid_t slave_pid;
-      readn(slave_fd, &slave_pid, sizeof (pid_t));
-      slave_init(slave_fd, slave_pid);
-      warnx("[%5d] online!", slave_pid);
+      slave_init(serv_accept(issue_fd));
+      warnx("[%5d] online!", slaves[sc-1].pid);
     }
     process_tick();
   }
