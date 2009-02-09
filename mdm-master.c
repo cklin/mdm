@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-09 01:20:18 cklin>
+// Time-stamp: <2009-02-09 01:56:07 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -125,6 +125,7 @@ static pid_t run_main(int issue_fd, const char *addr, char *argv[])
 static int slave_wait(slave *slv)
 {
   slv->idle = true;
+  unregister_job(&slv->job.cmd);
   return readn(slv->issue_fd, &(slv->status), sizeof (int));
 }
 
@@ -171,11 +172,13 @@ static void process_tick(void)
   int index;
 
   assert(pending || wind_down);
-  for (index=0; GOOD_SLAVE(index); index++)
+  for (index=sc-1; index>=0; index--)
     if (slaves[index].idle) {
       if (pending) {
-        issue(index);
-        fetch();
+        if (register_job(&job_pending.cmd)) {
+          issue(index);
+          fetch();
+        }
       }
       else {
         warnx("[%5d] exit", slaves[index].pid);
@@ -191,11 +194,12 @@ int main(int argc, char *argv[])
   int   issue_fd;
   int   slave_index;
 
-  if (argc < 3)
-    errx(1, "Need comms directory and command");
+  if (argc < 4)
+    errx(1, "Need comms directory, iospec file, and command");
   sockdir = *(++argv);
   check_sockdir(sockdir);
 
+  init_iospec(*(++argv));
   issue_fd = init_issue();
   daemon(1, 0);
   init_mesg_log();

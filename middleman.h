@@ -1,8 +1,9 @@
-// Time-stamp: <2009-02-08 22:27:01 cklin>
+// Time-stamp: <2009-02-09 01:31:40 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
 
+#include <stdbool.h>
 #include <unistd.h>
 
 #define MAX_SLAVES    4
@@ -40,5 +41,9 @@ void *xmalloc(size_t size);
 char *path_join(const char *path, const char *name);
 char *xstrdup(const char *s);
 void release_job(job *job);
+
+void init_iospec(const char *config_name);
+bool register_job(sv *cmd);
+void unregister_job(sv *cmd);
 
 #endif
