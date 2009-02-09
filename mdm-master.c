@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-08 10:08:21 cklin>
+// Time-stamp: <2009-02-08 20:17:36 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -11,6 +11,7 @@
 #include "middleman.h"
 
 typedef struct {
+  job   job;
   int   issue_fd, status;
   pid_t pid;
 } slave;
@@ -141,7 +142,6 @@ static void issue(int slave_index)
 {
   slave *slv = &slaves[slave_index];
   int   run_fd;
-  job   job;
 
   if (!wind_down)
     run_fd = accept_run();
@@ -151,15 +151,15 @@ static void issue(int slave_index)
     return;
   }
 
-  read_job(run_fd, &job);
+  read_job(run_fd, &(slv->job));
   write_int(run_fd, slv->status);
   close(run_fd);
 
   write_int(slv->issue_fd, 1);
-  write_job(slv->issue_fd, &job);
+  write_job(slv->issue_fd, &(slv->job));
 
-  warnx("[%5d] > %s", slv->pid, job.cmd.svec[0]);
-  release_job(&job);
+  warnx("[%5d] > %s", slv->pid, slv->job.cmd.svec[0]);
+  release_job(&(slv->job));
 }
 
 int main(int argc, char *argv[])
