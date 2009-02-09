@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-08 22:26:45 cklin>
+// Time-stamp: <2009-02-09 00:42:19 cklin>
 
 #include <err.h>
 #include <stdlib.h>
@@ -50,4 +50,10 @@ void release_job(job *job)
   free(job->cmd.svec);
   free(job->env.buffer);
   free(job->env.svec);
+
+  job->cwd = NULL;
+  job->cmd.buffer = NULL;
+  job->cmd.svec = NULL;
+  job->env.buffer = NULL;
+  job->env.svec = NULL;
 }

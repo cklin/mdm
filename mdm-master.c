@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-08 20:17:36 cklin>
+// Time-stamp: <2009-02-09 00:58:27 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -14,6 +14,7 @@ typedef struct {
   job   job;
   int   issue_fd, status;
   pid_t pid;
+  bool  idle;
 } slave;
 
 #define GOOD_SLAVE(x) (0 <= (x) && (x) < sc)
@@ -27,9 +28,11 @@ static void slave_init(int fd, pid_t pid)
   assert(sc < MAX_SLAVES);
   slaves[sc].status = 0;
   slaves[sc].issue_fd = fd;
-  slaves[sc++].pid = pid;
+  slaves[sc].pid = pid;
+  slaves[sc].idle = true;
   FD_SET(fd, &openfds);
   if (fd > maxfd)  maxfd = fd;
+  sc++;
 }
 
 static void slave_exit(int slave)
@@ -38,6 +41,7 @@ static void slave_exit(int slave)
 
   assert(GOOD_SLAVE(slave));
   slave_fd = slaves[slave].issue_fd;
+  release_job(&(slaves[slave].job));
   slaves[slave] = slaves[--sc];
 
   FD_CLR(slave_fd, &openfds);
@@ -117,49 +121,66 @@ static pid_t run_main(int issue_fd, const char *addr, char *argv[])
   return main_pid;
 }
 
-static int get_status(slave *slv)
+static int slave_wait(slave *slv)
 {
+  slv->idle = true;
   return readn(slv->issue_fd, &(slv->status), sizeof (int));
 }
 
-static bool wind_down;
+static bool wind_down, pending;
+static job  job_pending;
+static int  run_fd;
 
-static int accept_run(void)
+static void fetch(void)
 {
-  int run_fd, opcode;
+  int opcode;
 
+  assert(!pending);
   run_fd = serv_accept(fetch_fd);
   readn(run_fd, &opcode, sizeof (int));
   if (opcode == 0) {
     close(run_fd);
     wind_down = true;
-    return -1;
   }
-  return run_fd;
+  else {
+    read_job(run_fd, &job_pending);
+    pending = true;
+  }
 }
 
 static void issue(int slave_index)
 {
   slave *slv = &slaves[slave_index];
-  int   run_fd;
 
-  if (!wind_down)
-    run_fd = accept_run();
-  if (wind_down) {
-    warnx("[%5d] exit", slv->pid);
-    slave_exit(slave_index);
-    return;
-  }
-
-  read_job(run_fd, &(slv->job));
+  assert(pending);
   write_int(run_fd, slv->status);
   close(run_fd);
 
+  release_job(&(slv->job));
+  slv->job = job_pending;
   write_int(slv->issue_fd, 1);
   write_job(slv->issue_fd, &(slv->job));
-
   warnx("[%5d] > %s", slv->pid, slv->job.cmd.svec[0]);
-  release_job(&(slv->job));
+  slv->idle = false;
+  pending = false;
+}
+
+static void process_tick(void)
+{
+  int index;
+
+  assert(pending || wind_down);
+  for (index=0; GOOD_SLAVE(index); index++)
+    if (slaves[index].idle) {
+      if (pending) {
+        issue(index);
+        fetch();
+      }
+      else {
+        warnx("[%5d] exit", slaves[index].pid);
+        slave_exit(index);
+      }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -181,6 +202,8 @@ int main(int argc, char *argv[])
   main_pid = run_main(issue_fd, fetch_addr, argv+1);
 
   wind_down = false;
+  fetch();
+
   while (sc > 0 || !wind_down) {
     fd_set readfds = openfds;
     if (sc < MAX_SLAVES && !wind_down)
@@ -191,10 +214,8 @@ int main(int argc, char *argv[])
     for (slave_index=sc-1; slave_index>=0; slave_index--) {
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
-        if (get_status(slv) > 0) {
+        if (slave_wait(slv) > 0)
           warnx("[%5d] done (%d)", slv->pid, slv->status);
-          issue(slave_index);
-        }
         else {
           warnx("[%5d] lost", slv->pid);
           slave_exit(slave_index);
@@ -208,8 +229,8 @@ int main(int argc, char *argv[])
       readn(slave_fd, &slave_pid, sizeof (pid_t));
       slave_init(slave_fd, slave_pid);
       warnx("[%5d] online!", slave_pid);
-      issue(sc-1);
     }
+    process_tick();
   }
   kill(main_pid, SIGALRM);
   return 0;
