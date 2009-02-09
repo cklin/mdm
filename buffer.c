@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:40:36 cklin>
+// Time-stamp: <2009-02-08 22:26:45 cklin>
 
 #include <err.h>
 #include <stdlib.h>
@@ -34,6 +34,13 @@ char *path_join(const char *path, const char *name)
     pathname[path_len++] = '/';
   strcpy(pathname+path_len, name);
   return pathname;
+}
+
+char *xstrdup(const char *s)
+{
+  char *dup = strdup(s);
+  if (dup == NULL)  err(104, "strdup");
+  return dup;
 }
 
 void release_job(job *job)
