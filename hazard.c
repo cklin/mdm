@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-09 01:51:22 cklin>
+// Time-stamp: <2009-02-12 00:05:36 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -167,65 +167,61 @@ static void del_uti(char usage, const char *name)
   }
 }
 
+static bool iterate_res(sv *cmd, char **ar, char *au)
+{
+  static char   *name, *base;
+  static char   *opt, **ptr, *nul = "";
+  static iospec *ios;
+
+  if (cmd) {
+    free(name);
+    name = xstrdup(cmd->svec[0]);
+    base = basename(name);
+
+    ios = find_iospec(base);
+    opt = nul;
+    ptr = cmd->svec;
+    return false;
+  }
+  if (ios == NULL)  return false;
+
+  while (*(++ptr))
+    if (**ptr != '-') {
+      char usage = calc_usage(opt, ios);
+      opt = nul;
+      if (usage != '-') {
+        *ar = *ptr;
+        *au = usage;
+        return true;
+      }
+      opt = nul;
+    }
+    else opt = *ptr;
+
+  ptr--;
+  return false;
+}
+
 bool register_job(sv *cmd)
 {
-  char   *name, *base;
-  iospec *ios;
-  char   *opt, **ptr, usage, nul[] = "";
+  char *res, usage;
 
-  name = xstrdup(cmd->svec[0]);
-  base = basename(name);
-  ios = find_iospec(base);
-  if (ios == NULL)  return true;
+  iterate_res(cmd, NULL, NULL);
+  while (iterate_res(NULL, &res, &usage))
+    if (check_conflict(usage, res))
+      return false;
 
-  opt = nul;
-  for (ptr = cmd->svec+1; *ptr; ptr++) {
-    if (*ptr[0] == '-')
-      opt = *ptr;
-    else {
-      usage = calc_usage(opt, ios);
-      if (usage != '-')
-        if (check_conflict(usage, *ptr))
-          return false;
-      opt = nul;
-    }
-  }
-
-  opt = nul;
-  for (ptr = cmd->svec; *ptr; ptr++) {
-    if (*ptr[0] == '-')
-      opt = *ptr;
-    else {
-      usage = calc_usage(opt, ios);
-      if (usage != '-')
-        add_uti(usage, *ptr);
-      opt = nul;
-    }
-  }
+  iterate_res(cmd, NULL, NULL);
+  while (iterate_res(NULL, &res, &usage))
+    add_uti(usage, res);
   return true;
 }
 
 void unregister_job(sv *cmd)
 {
-  char   *name, *base;
-  iospec *ios;
-  char   *opt, **ptr, usage, nul[] = "";
+  char *res, usage;
 
-  name = xstrdup(cmd->svec[0]);
-  base = basename(name);
-  ios = find_iospec(base);
-  if (ios == NULL)  return;
-
-  opt = nul;
-  for (ptr = cmd->svec; *ptr; ptr++) {
-    if (*ptr[0] == '-')
-      opt = *ptr;
-    else {
-      usage = calc_usage(opt, ios);
-      if (usage != '-')
-        del_uti(usage, *ptr);
-      opt = nul;
-    }
-  }
-  return;
+  iterate_res(cmd, NULL, NULL);
+  while (iterate_res(NULL, &res, &usage))
+    del_uti(usage, res);
 }
