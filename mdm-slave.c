@@ -1,10 +1,11 @@
-// Time-stamp: <2009-02-11 23:35:05 cklin>
+// Time-stamp: <2009-02-12 12:47:09 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <err.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "middleman.h"
 
@@ -35,6 +36,8 @@ int main(int argc, char *argv[])
 
   master_fd = hookup(argv[1]);
   write_int(master_fd, getpid());
+  if (isatty(STDIN_FILENO))
+    printf("\ek%s\e\\\n", ttyname(STDIN_FILENO));
 
   for ( ; ; ) {
     readn(master_fd, &op, sizeof (int));
