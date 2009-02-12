@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-09 01:31:40 cklin>
+// Time-stamp: <2009-02-12 00:13:06 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -43,7 +43,8 @@ char *xstrdup(const char *s);
 void release_job(job *job);
 
 void init_iospec(const char *config_name);
-bool register_job(sv *cmd);
+bool validate_job(sv *cmd);
+void register_job(sv *cmd);
 void unregister_job(sv *cmd);
 
 #endif

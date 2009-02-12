@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 00:05:36 cklin>
+// Time-stamp: <2009-02-12 00:12:13 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -202,7 +202,7 @@ static bool iterate_res(sv *cmd, char **ar, char *au)
   return false;
 }
 
-bool register_job(sv *cmd)
+bool validate_job(sv *cmd)
 {
   char *res, usage;
 
@@ -210,11 +210,16 @@ bool register_job(sv *cmd)
   while (iterate_res(NULL, &res, &usage))
     if (check_conflict(usage, res))
       return false;
+  return true;
+}
+
+void register_job(sv *cmd)
+{
+  char *res, usage;
 
   iterate_res(cmd, NULL, NULL);
   while (iterate_res(NULL, &res, &usage))
     add_uti(usage, res);
-  return true;
 }
 
 void unregister_job(sv *cmd)

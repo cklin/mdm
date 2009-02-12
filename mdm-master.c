@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-09 01:56:07 cklin>
+// Time-stamp: <2009-02-12 00:12:39 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -175,7 +175,8 @@ static void process_tick(void)
   for (index=sc-1; index>=0; index--)
     if (slaves[index].idle) {
       if (pending) {
-        if (register_job(&job_pending.cmd)) {
+        if (validate_job(&job_pending.cmd)) {
+          register_job(&job_pending.cmd);
           issue(index);
           fetch();
         }
