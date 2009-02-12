@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 00:44:37 cklin>
+// Time-stamp: <2009-02-11 23:35:05 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -18,6 +18,8 @@ static int hookup(const char *sockdir)
   check_sockdir(sockdir);
   master_addr = path_join(sockdir, ISSUE_SOCK);
   master_fd = cli_conn(master_addr);
+  if (master_fd < 0)
+    errx(2, "Cannot connect to mdm-master");
   free(master_addr);
   return master_fd;
 }
