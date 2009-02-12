@@ -1,5 +1,6 @@
 # Time-stamp: <2009-02-09 01:30:57 cklin>
 
+CC = mdm-run gcc
 CFLAGS = -Wall -D_GNU_SOURCE
 OBJS = comms.o buffer.o socket.o hazard.o
 
