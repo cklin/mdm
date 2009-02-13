@@ -2,8 +2,8 @@
 
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
 cat <<EOF >> "$TMPFILE/screenrc"
-screen -t "Main Window" mdm-slave "$TMPFILE"
-sleep 1
+screen mdm-top "$TMPFILE"
+screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
@@ -12,4 +12,5 @@ select 0
 EOF
 mdm-master "$TMPFILE" "$@"
 screen -c "$TMPFILE/screenrc"
+cat "$TMPFILE/messages"
 rm -Rf "$TMPFILE"

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 00:12:39 cklin>
+// Time-stamp: <2009-02-12 21:05:57 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -60,6 +60,18 @@ static int init_issue(void)
   maxfd = issue_fd;
   free(issue_addr);
   return issue_fd;
+}
+
+static int mon_fd;
+
+static void init_monitor(void)
+{
+  char *mon_addr = path_join(sockdir, MON_SOCK);
+  int mon_sock_fd = serv_listen(mon_addr);
+
+  mon_fd = serv_accept(mon_sock_fd);
+  close(mon_sock_fd);
+  free(mon_addr);
 }
 
 static void init_mesg_log(void)
@@ -162,7 +174,10 @@ static void issue(int slave_index)
   slv->job = job_pending;
   write_int(slv->issue_fd, 1);
   write_job(slv->issue_fd, &(slv->job));
-  warnx("[%5d] > %s", slv->pid, slv->job.cmd.svec[0]);
+
+  write_int(mon_fd, 1);
+  write_int(mon_fd, slv->pid);
+
   slv->idle = false;
   pending = false;
 }
@@ -182,7 +197,8 @@ static void process_tick(void)
         }
       }
       else {
-        warnx("[%5d] exit", slaves[index].pid);
+        write_int(mon_fd, 4);
+        write_int(mon_fd, slaves[index].pid);
         slave_exit(index, true);
       }
     }
@@ -204,6 +220,7 @@ int main(int argc, char *argv[])
   issue_fd = init_issue();
   daemon(1, 0);
   init_mesg_log();
+  init_monitor();
   fetch_addr = init_fetch();
   main_pid = run_main(issue_fd, fetch_addr, argv+1);
 
@@ -220,10 +237,12 @@ int main(int argc, char *argv[])
     for (slave_index=sc-1; slave_index>=0; slave_index--) {
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
-        if (slave_wait(slv) > 0)
-          warnx("[%5d] done (%d)", slv->pid, slv->status);
-        else {
-          warnx("[%5d] lost", slv->pid);
+        if (slave_wait(slv) > 0) {
+          write_int(mon_fd, 2);
+          write_int(mon_fd, slv->pid);
+        } else {
+          write_int(mon_fd, 4);
+          write_int(mon_fd, slv->pid);
           slave_exit(slave_index, false);
         }
       }
@@ -231,10 +250,12 @@ int main(int argc, char *argv[])
 
     if (FD_ISSET(issue_fd, &readfds)) {
       slave_init(serv_accept(issue_fd));
-      warnx("[%5d] online!", slaves[sc-1].pid);
+      write_int(mon_fd, 3);
+      write_int(mon_fd, slaves[sc-1].pid);
     }
     process_tick();
   }
+  write_int(mon_fd, 0);
   kill(main_pid, SIGALRM);
   return 0;
 }

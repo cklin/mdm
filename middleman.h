@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 00:13:06 cklin>
+// Time-stamp: <2009-02-12 20:44:48 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -11,7 +11,7 @@
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
 #define FETCH_SOCK    "fetch"
 #define ISSUE_SOCK    "issue"
-#define CON_SOCK      "console"
+#define MON_SOCK      "monitor"
 #define LOG_FILE      "messages"
 
 typedef struct {
