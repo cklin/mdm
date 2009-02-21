@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-20 20:52:17 cklin>
+// Time-stamp: <2009-02-20 21:30:12 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -84,40 +84,62 @@ static void end_run(pid_t pid)
   runs[index].done    = true;
 }
 
+void update_display(void)
+{
+  int index;
+
+  mvprintw(0, 2, "Slaves online: %d", sc);
+  for (index=0; index<rc; index++) {
+    if (runs[index].running)
+      attron(A_REVERSE);
+    mvprintw(index+2, 2, "Run %5d", runs[index].pid);
+    attroff(A_REVERSE);
+  }
+  move(0, 0);
+  refresh();
+}
+
 int main(int argc, char *argv[])
 {
   int   master_fd, op;
   pid_t slv_pid;
-  sv    *cmd;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
-
   master_fd = hookup(argv[1]);
+
+  initscr();
+  nonl();
+  cbreak();
+  noecho();
 
   for ( ; ; ) {
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
 
     readn(master_fd, &slv_pid, sizeof (pid_t));
-    if (op == 1) {
+    switch (op) {
+    case 1:
       init_run(slv_pid);
       start_run(slv_pid);
-      printf("[%05d] running\n", slv_pid);
-    }
-    else if (op == 2) {
+      break;
+    case 2:
       end_run(slv_pid);
-      printf("[%05d] idle\n", slv_pid);
-    }
-    else if (op == 3) {
+      break;
+    case 3:
       sc++;
-      printf("[%05d] online\n", slv_pid);
-    }
-    else if (op == 4) {
+      break;
+    case 4:
       sc--;
-      printf("[%05d] exit\n", slv_pid);
+      break;
+    default:
+      errx(3, "Unknown opcode %d", op);
     }
+    update_display();
   }
+
+  getch();
+  endwin();
   return 0;
 }
 
