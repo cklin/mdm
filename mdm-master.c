@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 09:37:13 cklin>
+// Time-stamp: <2009-02-22 11:59:30 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -162,24 +162,29 @@ static void fetch(void)
   }
 }
 
-static void issue(int slave_index)
+static void issue(slave *slv)
 {
-  slave *slv = &slaves[slave_index];
-
-  assert(pending);
-  write_int(run_fd, slv->status);
-  close(run_fd);
-
+  assert(slv->idle);
   release_job(&(slv->job));
   slv->job = job_pending;
   write_int(slv->issue_fd, 1);
   write_job(slv->issue_fd, &(slv->job));
+  slv->idle = false;
 
   write_int(mon_fd, 1);
   write_pid(mon_fd, slv->pid);
+}
 
-  slv->idle = false;
+static void issue_ack(int slave_index)
+{
+  slave *slv = slaves+slave_index;
+
+  assert(pending);
+  issue(slv);
   pending = false;
+
+  write_int(run_fd, slv->status);
+  close(run_fd);
 }
 
 static void process_tick(void)
@@ -192,7 +197,7 @@ static void process_tick(void)
       if (pending) {
         if (validate_job(&job_pending.cmd)) {
           register_job(&job_pending.cmd);
-          issue(index);
+          issue_ack(index);
           fetch();
         }
       }
