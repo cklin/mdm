@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 11:59:30 cklin>
+// Time-stamp: <2009-02-22 14:05:08 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -17,21 +17,26 @@ typedef struct {
   bool  idle;
 } slave;
 
-#define GOOD_SLAVE(x) (0 <= (x) && (x) < sc)
+#define GOOD_SLAVE(x) (0 < (x) && (x) < sc)
 
-static slave  slaves[MAX_SLAVES];
+static slave  slaves[1+MAX_SLAVES];
 static fd_set openfds;
 static int    maxfd, sc;
 
+static void bump_maxfd(int fd)
+{
+  if (fd > maxfd)  maxfd = fd;
+}
+
 static void slave_init(int fd)
 {
-  assert(sc < MAX_SLAVES);
+  assert(sc < sizeof (slaves));
   slaves[sc].status = 0;
   slaves[sc].issue_fd = fd;
   readn(fd, &(slaves[sc].pid), sizeof (pid_t));
   slaves[sc].idle = true;
   FD_SET(fd, &openfds);
-  if (fd > maxfd)  maxfd = fd;
+  bump_maxfd(fd);
   sc++;
 }
 
@@ -45,8 +50,7 @@ static void slave_exit(int slave, bool halt)
   slaves[slave] = slaves[--sc];
 
   FD_CLR(slave_fd, &openfds);
-  if (halt)
-    write_int(slave_fd, 0);
+  if (halt)  write_int(slave_fd, 0);
   close(slave_fd);
 }
 
@@ -57,8 +61,8 @@ static int init_issue(void)
   char *issue_addr = path_join(sockdir, ISSUE_SOCK);
   int  issue_fd = serv_listen(issue_addr);
 
-  maxfd = issue_fd;
   free(issue_addr);
+  bump_maxfd(issue_fd);
   return issue_fd;
 }
 
@@ -85,53 +89,15 @@ static void init_mesg_log(void)
   free(mesg_file);
 }
 
-static int fetch_fd;
-
-static char *init_fetch(void)
+static int init_fetch(void)
 {
   char *fetch_addr = path_join(sockdir, FETCH_SOCK);
+  int  fetch_fd = serv_listen(fetch_addr);
 
-  fetch_fd = serv_listen(fetch_addr);
-  return fetch_addr;
-}
-
-static void sig_alarm(int signo)
-{
-  return;
-}
-
-static pid_t run_main(int issue_fd, const char *addr, char *argv[])
-{
-  pid_t main_pid;
-  job   job;
-  int   main_fd, master_fd, status;
-
-  main_fd = serv_accept(issue_fd);
-  main_pid = fork();
-  if (main_pid == 0) {
-    close(fetch_fd);
-    close(issue_fd);
-
-    setenv(CMD_SOCK_VAR, addr, 1);
-    job.cwd = get_current_dir_name();
-    job.cmd.svec = argv;
-    job.env.svec = environ;
-
-    readn(main_fd, &status, sizeof (pid_t));
-    write_int(main_fd, 1);
-    write_job(main_fd, &job);
-    readn(main_fd, &status, sizeof (int));
-
-    master_fd = cli_conn(addr);
-    write_int(master_fd, 0);
-    signal(SIGALRM, sig_alarm);
-    pause();
-
-    write_int(main_fd, 0);
-    exit(status);
-  }
-  close(main_fd);
-  return main_pid;
+  setenv(CMD_SOCK_VAR, fetch_addr, 1);
+  free(fetch_addr);
+  bump_maxfd(fetch_fd);
+  return fetch_fd;
 }
 
 static int slave_wait(slave *slv)
@@ -145,21 +111,20 @@ static bool wind_down, pending;
 static job  job_pending;
 static int  run_fd;
 
-static void fetch(void)
+static void fetch(int fetch_fd)
 {
   int opcode;
 
   assert(!pending);
   run_fd = serv_accept(fetch_fd);
   readn(run_fd, &opcode, sizeof (int));
-  if (opcode == 0) {
-    close(run_fd);
-    wind_down = true;
-  }
-  else {
+
+  if (opcode == 1) {
     read_job(run_fd, &job_pending);
     pending = true;
+    return;
   }
+  warnx("Unknown mdm-run opcode %d", opcode);
 }
 
 static void issue(slave *slv)
@@ -191,17 +156,15 @@ static void process_tick(void)
 {
   int index;
 
-  assert(pending || wind_down);
-  for (index=sc-1; index>=0; index--)
+  for (index=sc-1; index>0; index--)
     if (slaves[index].idle) {
       if (pending) {
         if (validate_job(&job_pending.cmd)) {
           register_job(&job_pending.cmd);
           issue_ack(index);
-          fetch();
         }
       }
-      else {
+      else if (wind_down) {
         write_int(mon_fd, 4);
         write_pid(mon_fd, slaves[index].pid);
         slave_exit(index, true);
@@ -209,11 +172,20 @@ static void process_tick(void)
     }
 }
 
+static void run_main(int issue_fd, char *argv[])
+{
+  assert(sc == 0);
+  slave_init(serv_accept(issue_fd));
+
+  job_pending.cwd = get_current_dir_name();
+  job_pending.cmd.svec = argv;
+  job_pending.env.svec = environ;
+  issue(slaves);
+}
+
 int main(int argc, char *argv[])
 {
-  char  *fetch_addr;
-  pid_t main_pid;
-  int   issue_fd;
+  int   issue_fd, fetch_fd;
   int   slave_index;
 
   if (argc < 4)
@@ -226,20 +198,28 @@ int main(int argc, char *argv[])
   daemon(1, 0);
   init_mesg_log();
   init_monitor();
-  fetch_addr = init_fetch();
-  main_pid = run_main(issue_fd, fetch_addr, argv+1);
+  fetch_fd = init_fetch();
+  run_main(issue_fd, argv+1);
 
   wind_down = false;
-  fetch();
-
-  while (sc > 0 || !wind_down) {
+  while (sc > 1 || !wind_down) {
     fd_set readfds = openfds;
-    if (sc < MAX_SLAVES && !wind_down)
+    if (!pending && !wind_down)
+      FD_SET(fetch_fd, &readfds);
+    if (sc < sizeof (slaves) && !wind_down)
       FD_SET(issue_fd, &readfds);
+
     if (select(maxfd+1, &readfds, NULL, NULL, NULL) < 0)
       err(3, "select");
 
-    for (slave_index=sc-1; slave_index>=0; slave_index--) {
+    if (FD_ISSET(fetch_fd, &readfds))
+      fetch(fetch_fd);
+    if (FD_ISSET(slaves->issue_fd, &readfds)) {
+      slave_wait(slaves);
+      wind_down = true;
+    }
+
+    for (slave_index=sc-1; slave_index>0; slave_index--) {
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (slave_wait(slv) > 0) {
@@ -260,7 +240,8 @@ int main(int argc, char *argv[])
     }
     process_tick();
   }
+
+  write_int(slaves->issue_fd, 0);
   write_int(mon_fd, 0);
-  kill(main_pid, SIGALRM);
   return 0;
 }
