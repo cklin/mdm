@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 09:37:38 cklin>
+// Time-stamp: <2009-02-22 09:46:24 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
 
+    read_job(master_fd, &job);
+
     pid = fork();
     if (pid == 0) {
-      read_job(master_fd, &job);
       close(master_fd);
-
       chdir(job.cwd);
       environ = job.env.svec;
       execvp(job.cmd.svec[0], job.cmd.svec);
