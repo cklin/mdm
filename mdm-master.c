@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 21:05:57 cklin>
+// Time-stamp: <2009-02-22 09:37:13 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -176,7 +176,7 @@ static void issue(int slave_index)
   write_job(slv->issue_fd, &(slv->job));
 
   write_int(mon_fd, 1);
-  write_int(mon_fd, slv->pid);
+  write_pid(mon_fd, slv->pid);
 
   slv->idle = false;
   pending = false;
@@ -198,7 +198,7 @@ static void process_tick(void)
       }
       else {
         write_int(mon_fd, 4);
-        write_int(mon_fd, slaves[index].pid);
+        write_pid(mon_fd, slaves[index].pid);
         slave_exit(index, true);
       }
     }
@@ -239,10 +239,10 @@ int main(int argc, char *argv[])
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (slave_wait(slv) > 0) {
           write_int(mon_fd, 2);
-          write_int(mon_fd, slv->pid);
+          write_pid(mon_fd, slv->pid);
         } else {
           write_int(mon_fd, 4);
-          write_int(mon_fd, slv->pid);
+          write_pid(mon_fd, slv->pid);
           slave_exit(slave_index, false);
         }
       }
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
     if (FD_ISSET(issue_fd, &readfds)) {
       slave_init(serv_accept(issue_fd));
       write_int(mon_fd, 3);
-      write_int(mon_fd, slaves[sc-1].pid);
+      write_pid(mon_fd, slaves[sc-1].pid);
     }
     process_tick();
   }

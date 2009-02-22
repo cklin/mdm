@@ -1,10 +1,11 @@
-// Time-stamp: <2009-02-12 20:44:48 cklin>
+// Time-stamp: <2009-02-22 09:35:39 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
 
 #include <stdbool.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAX_SLAVES    4
 
@@ -33,6 +34,8 @@ void check_sockdir(const char *path);
 ssize_t readn(int fd, void *vptr, size_t n);
 ssize_t writen(int fd, const void *vptr, size_t n);
 ssize_t write_int(int fd, int v);
+ssize_t write_pid(int fd, pid_t v);
+ssize_t write_time(int fd, time_t v);
 
 void read_job(int fd, job *job);
 void write_job(int fd, const job *job);

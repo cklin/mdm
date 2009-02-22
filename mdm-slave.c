@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 12:47:09 cklin>
+// Time-stamp: <2009-02-22 09:37:38 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     errx(1, "Need socket directory argument");
 
   master_fd = hookup(argv[1]);
-  write_int(master_fd, getpid());
+  write_pid(master_fd, getpid());
   if (isatty(STDIN_FILENO))
     printf("\ek%s\e\\\n", ttyname(STDIN_FILENO));
 

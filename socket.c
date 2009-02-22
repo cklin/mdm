@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 13:42:08 cklin>
+// Time-stamp: <2009-02-22 09:34:59 cklin>
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -135,11 +135,21 @@ ssize_t writen(int fd, const void *vptr, size_t n)
   return n;
 }
 
-// Write an integer to a file descriptor
+// Write a scalar value to a file descriptor
 
 ssize_t write_int(int fd, int v)
 {
   return writen(fd, &v, sizeof (int));
+}
+
+ssize_t write_pid(int fd, pid_t v)
+{
+  return writen(fd, &v, sizeof (pid_t));
+}
+
+ssize_t write_time(int fd, time_t v)
+{
+  return writen(fd, &v, sizeof (time_t));
 }
 
 // Basic security checks for the IPC directory
