@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-20 21:30:12 cklin>
+// Time-stamp: <2009-02-23 13:03:33 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -23,7 +23,7 @@ static int hookup(const char *sockdir)
 
 typedef struct {
   sv    cmd;
-  pid_t pid;
+  pid_t pid, run_pid;
   bool  running, done;
 } run;
 
@@ -67,11 +67,12 @@ static int find_run(pid_t pid)
   return -1;
 }
 
-static void start_run(pid_t pid)
+static void start_run(pid_t pid, pid_t run_pid)
 {
   int index = find_run(pid);
   assert(runs[index].running == false);
   assert(runs[index].done    == false);
+  runs[index].run_pid = run_pid;
   runs[index].running = true;
 }
 
@@ -92,7 +93,8 @@ void update_display(void)
   for (index=0; index<rc; index++) {
     if (runs[index].running)
       attron(A_REVERSE);
-    mvprintw(index+2, 2, "Run %5d", runs[index].pid);
+    mvprintw(index+2, 2, "Run %5d/%5d",
+             runs[index].pid, runs[index].run_pid);
     attroff(A_REVERSE);
   }
   move(0, 0);
@@ -102,7 +104,7 @@ void update_display(void)
 int main(int argc, char *argv[])
 {
   int   master_fd, op;
-  pid_t slv_pid;
+  pid_t slv_pid, run_pid;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -121,7 +123,8 @@ int main(int argc, char *argv[])
     switch (op) {
     case 1:
       init_run(slv_pid);
-      start_run(slv_pid);
+      readn(master_fd, &run_pid, sizeof (pid_t));
+      start_run(slv_pid, run_pid);
       break;
     case 2:
       end_run(slv_pid);

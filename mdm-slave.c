@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 09:46:24 cklin>
+// Time-stamp: <2009-02-23 12:04:33 cklin>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -52,6 +52,8 @@ int main(int argc, char *argv[])
       environ = job.env.svec;
       execvp(job.cmd.svec[0], job.cmd.svec);
     }
+
+    write_pid(master_fd, pid);
     wait(&status);
     write_int(master_fd, status);
   }

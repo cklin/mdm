@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 14:05:08 cklin>
+// Time-stamp: <2009-02-23 12:59:46 cklin>
 
 #include <assert.h>
 #include <sys/socket.h>
@@ -13,7 +13,7 @@
 typedef struct {
   job   job;
   int   issue_fd, status;
-  pid_t pid;
+  pid_t pid, run_pid;
   bool  idle;
 } slave;
 
@@ -134,10 +134,12 @@ static void issue(slave *slv)
   slv->job = job_pending;
   write_int(slv->issue_fd, 1);
   write_job(slv->issue_fd, &(slv->job));
+  readn(slv->issue_fd, &(slv->run_pid), sizeof (pid_t));
   slv->idle = false;
 
   write_int(mon_fd, 1);
   write_pid(mon_fd, slv->pid);
+  write_pid(mon_fd, slv->run_pid);
 }
 
 static void issue_ack(int slave_index)
