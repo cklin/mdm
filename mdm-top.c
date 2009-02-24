@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 23:41:39 cklin>
+// Time-stamp: <2009-02-24 00:39:16 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -131,8 +131,8 @@ void update_display(void)
       printw("%c %s  ", pptr->state, utime);
     }
     else {
-      printw("       -     - ");
-      printw("      -   ");
+      addstr("       -     - ");
+      addstr("      -   ");
     }
 
     addnstr(rptr->cmd.buffer, col-25);
@@ -203,7 +203,6 @@ int main(int argc, char *argv[])
     update_display();
   }
 
-  getch();
   endwin();
   return 0;
 }
