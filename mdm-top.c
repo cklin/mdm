@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 17:49:16 cklin>
+// Time-stamp: <2009-02-23 17:58:54 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #include "middleman.h"
 
 static int hookup(const char *sockdir)
@@ -64,7 +65,7 @@ static int find_run(pid_t pid)
     if (runs[index].pid == pid && !runs[index].done)
       return index;
 
-  errx(2, "Cannot find run with pid %d", pid);
+  errx(3, "Cannot find run with pid %d", pid);
   return -1;
 }
 
@@ -124,8 +125,10 @@ void update_display(void)
 
 int main(int argc, char *argv[])
 {
-  int   master_fd, op;
-  pid_t slv_pid, run_pid;
+  int            master_fd, op;
+  pid_t          slv_pid, run_pid;
+  fd_set         readfds;
+  struct timeval tout;
 
   if (argc != 2)
     errx(1, "Need socket directory argument");
@@ -137,6 +140,20 @@ int main(int argc, char *argv[])
   noecho();
 
   for ( ; ; ) {
+    FD_ZERO(&readfds);
+    FD_SET(master_fd, &readfds);
+    gettimeofday(&tout, NULL);
+    tout.tv_sec = 0;
+    tout.tv_usec = 1000000-tout.tv_usec;
+
+    if (select(master_fd+1, &readfds, NULL, NULL, &tout) < 0)
+      err(4, "select");
+
+    if (!FD_ISSET(master_fd, &readfds)) {
+      update_display();
+      continue;
+    }
+
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
 
@@ -157,7 +174,7 @@ int main(int argc, char *argv[])
       sc--;
       break;
     default:
-      errx(3, "Unknown opcode %d", op);
+      errx(5, "Unknown opcode %d", op);
     }
     update_display();
   }
