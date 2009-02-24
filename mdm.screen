@@ -8,6 +8,8 @@ screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
 screen mdm-slave "$TMPFILE"
+screen mdm-slave "$TMPFILE"
+screen mdm-slave "$TMPFILE"
 select 0
 EOF
 mdm-master "$TMPFILE" "$@"

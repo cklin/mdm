@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 23:09:01 cklin>
+// Time-stamp: <2009-02-23 23:55:19 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#define MAX_SLAVES    4
+#define MAX_SLAVES    16
 
 #define MAX_HISTORY   60
 
