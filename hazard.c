@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-12 00:12:13 cklin>
+// Time-stamp: <2009-02-24 15:41:03 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -83,11 +83,22 @@ static iospec *find_iospec(const char *name)
   return NULL;
 }
 
-static char calc_usage(const char *opt, iospec *ios)
+static bool iterate_spec(iospec *ios_arg, char **res)
 {
-  int  count = 0;
-  bool new_token = true;
-  char *cp = ios->resources;
+  static iospec *ios = NULL;
+  static int    count;
+  static bool   new_token;
+  static char   *cp;
+
+  if (ios_arg) {
+    ios = ios_arg;
+    count = 0;
+    new_token = true;
+    cp = ios->resources;
+    return false;
+  }
+  if (ios == NULL)
+    return false;
 
   for ( ; count < ios->res_count; cp++) {
     if (*cp == '\0') {
@@ -95,12 +106,23 @@ static char calc_usage(const char *opt, iospec *ios)
       continue;
     }
     if (new_token) {
-      if (strcmp(opt, cp+1) == 0)
-        return *cp;
       new_token = false;
       count++;
+      *res = cp;
+      return true;
     }
   }
+  return false;
+}
+
+static char calc_usage(const char *opt, iospec *ios)
+{
+  char *cp;
+
+  iterate_spec(ios, NULL);
+  while (iterate_spec(NULL, &cp))
+    if (strcmp(opt, cp+1) == 0)
+      return *cp;
   return '-';
 }
 
@@ -167,7 +189,7 @@ static void del_uti(char usage, const char *name)
   }
 }
 
-static bool iterate_res(sv *cmd, char **ar, char *au)
+static bool iterate_usage(sv *cmd, char **ar, char *au)
 {
   static char   *name, *base;
   static char   *opt, **ptr, *nul = "";
@@ -206,8 +228,8 @@ bool validate_job(sv *cmd)
 {
   char *res, usage;
 
-  iterate_res(cmd, NULL, NULL);
-  while (iterate_res(NULL, &res, &usage))
+  iterate_usage(cmd, NULL, NULL);
+  while (iterate_usage(NULL, &res, &usage))
     if (check_conflict(usage, res))
       return false;
   return true;
@@ -217,8 +239,8 @@ void register_job(sv *cmd)
 {
   char *res, usage;
 
-  iterate_res(cmd, NULL, NULL);
-  while (iterate_res(NULL, &res, &usage))
+  iterate_usage(cmd, NULL, NULL);
+  while (iterate_usage(NULL, &res, &usage))
     add_uti(usage, res);
 }
 
@@ -226,7 +248,7 @@ void unregister_job(sv *cmd)
 {
   char *res, usage;
 
-  iterate_res(cmd, NULL, NULL);
-  while (iterate_res(NULL, &res, &usage))
+  iterate_usage(cmd, NULL, NULL);
+  while (iterate_usage(NULL, &res, &usage))
     del_uti(usage, res);
 }
