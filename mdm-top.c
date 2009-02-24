@@ -1,11 +1,12 @@
-// Time-stamp: <2009-02-23 17:42:01 cklin>
+// Time-stamp: <2009-02-23 17:49:16 cklin>
 
 #include <assert.h>
 #include <err.h>
+#include <ncurses.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <ncurses.h>
 #include <time.h>
+#include <sys/select.h>
 #include "middleman.h"
 
 static int hookup(const char *sockdir)

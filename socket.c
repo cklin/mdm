@@ -1,10 +1,10 @@
-// Time-stamp: <2009-02-22 09:34:59 cklin>
+// Time-stamp: <2009-02-23 17:50:56 cklin>
 
+#include <err.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <err.h>
 #include <unistd.h>
 
 // Advanced Programming in the Unix Environment, Program 15.22
