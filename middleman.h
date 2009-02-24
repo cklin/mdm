@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 21:39:41 cklin>
+// Time-stamp: <2009-02-23 23:09:01 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -9,7 +9,7 @@
 
 #define MAX_SLAVES    4
 
-#define MAX_HISTORY   16
+#define MAX_HISTORY   60
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
 #define FETCH_SOCK    "fetch"

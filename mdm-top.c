@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 22:43:56 cklin>
+// Time-stamp: <2009-02-23 23:08:10 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -101,7 +101,7 @@ void update_display(void)
   time_t    now;
   run       *rptr;
   proc      *pptr;
-  int       index, row, col, x;
+  int       index, row, col, y, x;
 
   now = time(NULL);
   mvprintw(0, 2, "Slaves online: %d", sc);
@@ -109,9 +109,12 @@ void update_display(void)
 
   getmaxyx(stdscr, row, col);
 
-  for (index=1; index<rc; index++) {
+  for (index=1, y=2; index<rc; index++) {
+    if (row-y <= rc-index && !rptr->running)
+      continue;
     rptr = runs+index;
     pptr = &(rptr->pc);
+
     if (rptr->running) {
       pptr->state = '!';
       proc_stat(rptr->run_pid, pptr);
@@ -121,15 +124,15 @@ void update_display(void)
     ltime = localtime(&(pptr->start_time));
     strftime(start, sizeof (start), "%T", ltime);
 
-    move(index+1, 0);
-    printw("%c %5d ", pptr->state, rptr->run_pid);
-    printw("%s %s  ", start, utime);
+    move(y++, 0);
+    printw("%s %5d ", start, rptr->run_pid);
+    printw("%c %s  ", pptr->state, utime);
     addnstr(rptr->cmd.buffer, col-25);
     for (x=25+strlen(rptr->cmd.buffer); x<col; x++)
       addch(' ');
     attroff(A_REVERSE);
   }
-  move(row-1, col-1);
+  move(0, col-1);
   refresh();
 }
 
