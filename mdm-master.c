@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 21:34:59 cklin>
+// Time-stamp: <2009-02-23 23:34:40 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -123,6 +123,8 @@ static void fetch(int fetch_fd)
   if (opcode == 1) {
     read_job(run_fd, &job_pending);
     pending = true;
+    write_int(mon_fd, 1);
+    write_sv(mon_fd, job_pending.cmd.svec);
     return;
   }
   warnx("Unknown mdm-run opcode %d", opcode);
@@ -137,11 +139,6 @@ static void issue(slave *slv)
   write_job(slv->issue_fd, &(slv->job));
   readn(slv->issue_fd, &(slv->run_pid), sizeof (pid_t));
   slv->idle = false;
-
-  write_int(mon_fd, 1);
-  write_pid(mon_fd, slv->pid);
-  write_pid(mon_fd, slv->run_pid);
-  write_sv(mon_fd, slv->job.cmd.svec);
 }
 
 static void issue_ack(int slave_index)
@@ -151,6 +148,9 @@ static void issue_ack(int slave_index)
   assert(pending);
   issue(slv);
   pending = false;
+
+  write_int(mon_fd, 2);
+  write_pid(mon_fd, slv->run_pid);
 
   write_int(run_fd, slv->status);
   close(run_fd);
@@ -169,8 +169,7 @@ static void process_tick(void)
         }
       }
       else if (wind_down) {
-        write_int(mon_fd, 4);
-        write_pid(mon_fd, slaves[index].pid);
+        write_int(mon_fd, 11);
         slave_exit(index, true);
       }
     }
@@ -227,11 +226,10 @@ int main(int argc, char *argv[])
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (slave_wait(slv) > 0) {
-          write_int(mon_fd, 2);
-          write_pid(mon_fd, slv->pid);
+          write_int(mon_fd, 3);
+          write_pid(mon_fd, slv->run_pid);
         } else {
-          write_int(mon_fd, 4);
-          write_pid(mon_fd, slv->pid);
+          write_int(mon_fd, 11);
           slave_exit(slave_index, false);
         }
       }
@@ -239,8 +237,7 @@ int main(int argc, char *argv[])
 
     if (FD_ISSET(issue_fd, &readfds)) {
       slave_init(serv_accept(issue_fd));
-      write_int(mon_fd, 3);
-      write_pid(mon_fd, slaves[sc-1].pid);
+      write_int(mon_fd, 10);
     }
     process_tick();
   }

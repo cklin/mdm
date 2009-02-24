@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 23:08:10 cklin>
+// Time-stamp: <2009-02-23 23:41:39 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -28,7 +28,7 @@ static int hookup(const char *sockdir)
 typedef struct {
   sv    cmd;
   proc  pc;
-  pid_t pid, run_pid;
+  pid_t pid;
   bool  running, done;
 } run;
 
@@ -48,14 +48,16 @@ static void release_run(void)
   rc--;
 }
 
-static void init_run(pid_t pid)
+static void init_run(sv *cmd)
 {
   if (rc == MAX_HISTORY)
     release_run();
 
-  runs[rc].pid = pid;
+  runs[rc].pid = 0;
   runs[rc].running = false;
   runs[rc].done = false;
+  runs[rc].cmd = *cmd;
+  flatten_sv(&(runs[rc].cmd));
   rc++;
 }
 
@@ -71,15 +73,14 @@ static int find_run(pid_t pid)
   return -1;
 }
 
-static void start_run(pid_t pid, pid_t run_pid, sv *cmd)
+static void start_run(pid_t pid)
 {
-  int index = find_run(pid);
+  int index = find_run(0);
+  assert(index == rc-1);
   assert(runs[index].running == false);
   assert(runs[index].done    == false);
-  runs[index].run_pid = run_pid;
+  runs[index].pid = pid;
   runs[index].running = true;
-  runs[index].cmd = *cmd;
-  flatten_sv(&(runs[index].cmd));
 }
 
 static void end_run(pid_t pid)
@@ -109,7 +110,7 @@ void update_display(void)
 
   getmaxyx(stdscr, row, col);
 
-  for (index=1, y=2; index<rc; index++) {
+  for (index=0, y=2; index<rc; index++) {
     if (row-y <= rc-index && !rptr->running)
       continue;
     rptr = runs+index;
@@ -117,16 +118,23 @@ void update_display(void)
 
     if (rptr->running) {
       pptr->state = '!';
-      proc_stat(rptr->run_pid, pptr);
+      proc_stat(rptr->pid, pptr);
       attron(A_REVERSE);
     }
-    utime = time_string(pptr->utime);
-    ltime = localtime(&(pptr->start_time));
-    strftime(start, sizeof (start), "%T", ltime);
 
     move(y++, 0);
-    printw("%s %5d ", start, rptr->run_pid);
-    printw("%c %s  ", pptr->state, utime);
+    if (rptr->running || rptr->done) {
+      utime = time_string(pptr->utime);
+      ltime = localtime(&(pptr->start_time));
+      strftime(start, sizeof (start), "%T", ltime);
+      printw("%s %5d ", start, rptr->pid);
+      printw("%c %s  ", pptr->state, utime);
+    }
+    else {
+      printw("       -     - ");
+      printw("      -   ");
+    }
+
     addnstr(rptr->cmd.buffer, col-25);
     for (x=25+strlen(rptr->cmd.buffer); x<col; x++)
       addch(' ');
@@ -139,7 +147,7 @@ void update_display(void)
 int main(int argc, char *argv[])
 {
   int            master_fd, op;
-  pid_t          slv_pid, run_pid;
+  pid_t          run_pid;
   sv             cmd;
   fd_set         readfds;
   struct timeval tout;
@@ -167,25 +175,26 @@ int main(int argc, char *argv[])
       update_display();
       continue;
     }
-
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
 
-    readn(master_fd, &slv_pid, sizeof (pid_t));
     switch (op) {
     case 1:
-      init_run(slv_pid);
-      readn(master_fd, &run_pid, sizeof (pid_t));
       read_sv(master_fd, &cmd);
-      start_run(slv_pid, run_pid, &cmd);
+      init_run(&cmd);
       break;
     case 2:
-      end_run(slv_pid);
+      readn(master_fd, &run_pid, sizeof (pid_t));
+      start_run(run_pid);
       break;
     case 3:
+      readn(master_fd, &run_pid, sizeof (pid_t));
+      end_run(run_pid);
+      break;
+    case 10:
       sc++;
       break;
-    case 4:
+    case 11:
       sc--;
       break;
     default:
