@@ -1,8 +1,10 @@
-// Time-stamp: <2009-02-24 00:39:16 cklin>
+// Time-stamp: <2009-02-24 15:26:36 cklin>
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <ncurses.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -144,6 +146,13 @@ void update_display(void)
   refresh();
 }
 
+void sig_winch(int sig)
+{
+  endwin();
+  initscr();
+  refresh();
+}
+
 int main(int argc, char *argv[])
 {
   int            master_fd, op;
@@ -157,11 +166,14 @@ int main(int argc, char *argv[])
   master_fd = hookup(argv[1]);
 
   initscr();
+  signal(SIGWINCH, sig_winch);
   nonl();
   cbreak();
   noecho();
 
   for ( ; ; ) {
+    update_display();
+
     FD_ZERO(&readfds);
     FD_SET(master_fd, &readfds);
     gettimeofday(&tout, NULL);
@@ -169,12 +181,11 @@ int main(int argc, char *argv[])
     tout.tv_usec = 1050000-tout.tv_usec;
 
     if (select(master_fd+1, &readfds, NULL, NULL, &tout) < 0)
-      err(4, "select");
+      if (errno == EINTR)  continue;
+      else  err(4, "select");
 
-    if (!FD_ISSET(master_fd, &readfds)) {
-      update_display();
+    if (!FD_ISSET(master_fd, &readfds))
       continue;
-    }
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
 
@@ -200,7 +211,6 @@ int main(int argc, char *argv[])
     default:
       errx(5, "Unknown opcode %d", op);
     }
-    update_display();
   }
 
   endwin();
