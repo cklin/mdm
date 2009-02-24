@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 15:26:36 cklin>
+// Time-stamp: <2009-02-24 15:27:51 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -180,9 +180,10 @@ int main(int argc, char *argv[])
     tout.tv_sec = 0;
     tout.tv_usec = 1050000-tout.tv_usec;
 
-    if (select(master_fd+1, &readfds, NULL, NULL, &tout) < 0)
+    if (select(master_fd+1, &readfds, NULL, NULL, &tout) < 0) {
       if (errno == EINTR)  continue;
-      else  err(4, "select");
+      err(4, "select");
+    }
 
     if (!FD_ISSET(master_fd, &readfds))
       continue;
