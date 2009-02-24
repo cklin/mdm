@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-22 09:35:39 cklin>
+// Time-stamp: <2009-02-23 17:41:28 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -8,6 +8,8 @@
 #include <time.h>
 
 #define MAX_SLAVES    4
+
+#define MAX_HISTORY   16
 
 #define CMD_SOCK_VAR  "MDM_CMD_SOCK"
 #define FETCH_SOCK    "fetch"
@@ -49,5 +51,15 @@ void init_iospec(const char *config_name);
 bool validate_job(sv *cmd);
 void register_job(sv *cmd);
 void unregister_job(sv *cmd);
+
+typedef struct {
+  char          state;
+  pid_t         ppid;
+  unsigned long utime;
+  time_t        start_time;
+} proc;
+
+bool proc_stat(pid_t pid, proc *pptr);
+char *time_string(unsigned long seconds);
 
 #endif

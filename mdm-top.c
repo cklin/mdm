@@ -1,10 +1,11 @@
-// Time-stamp: <2009-02-23 13:03:33 cklin>
+// Time-stamp: <2009-02-23 17:42:01 cklin>
 
 #include <assert.h>
 #include <err.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <ncurses.h>
+#include <time.h>
 #include "middleman.h"
 
 static int hookup(const char *sockdir)
@@ -23,11 +24,10 @@ static int hookup(const char *sockdir)
 
 typedef struct {
   sv    cmd;
+  proc  pc;
   pid_t pid, run_pid;
   bool  running, done;
 } run;
-
-#define MAX_HISTORY 10
 
 static run runs[MAX_HISTORY];
 static int rc, sc;
@@ -79,25 +79,45 @@ static void start_run(pid_t pid, pid_t run_pid)
 static void end_run(pid_t pid)
 {
   int index = find_run(pid);
-  assert(runs[index].running == true);
-  assert(runs[index].done    == false);
-  runs[index].running = false;
-  runs[index].done    = true;
+  run *rptr = runs+index;
+
+  assert(rptr->running == true);
+  assert(rptr->done    == false);
+  rptr->running = false;
+  rptr->done    = true;
+  rptr->pc.state = ' ';
 }
 
 void update_display(void)
 {
-  int index;
+  char      start[9], *utime;
+  struct tm *ltime;
+  time_t    now;
+  run       *rptr;
+  proc      *pptr;
+  int       index;
 
+  now = time(NULL);
   mvprintw(0, 2, "Slaves online: %d", sc);
-  for (index=0; index<rc; index++) {
-    if (runs[index].running)
+  mvprintw(0, 28, "%s", ctime(&now));
+
+  for (index=1; index<rc; index++) {
+    rptr = runs+index;
+    pptr = &(rptr->pc);
+    if (rptr->running) {
+      pptr->state = '!';
+      proc_stat(rptr->run_pid, pptr);
       attron(A_REVERSE);
-    mvprintw(index+2, 2, "Run %5d/%5d",
-             runs[index].pid, runs[index].run_pid);
+    }
+    utime = time_string(pptr->utime);
+    ltime = localtime(&(pptr->start_time));
+    strftime(start, sizeof (start), "%T", ltime);
+
+    mvprintw(index+1, 2, "%c %5d  %s  %s",
+             pptr->state, rptr->run_pid, start, utime);
     attroff(A_REVERSE);
   }
-  move(0, 0);
+  move(MAX_HISTORY+2, 0);
   refresh();
 }
 
