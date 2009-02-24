@@ -1,10 +1,11 @@
-// Time-stamp: <2009-02-23 17:58:54 cklin>
+// Time-stamp: <2009-02-23 22:43:56 cklin>
 
 #include <assert.h>
 #include <err.h>
 #include <ncurses.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <sys/select.h>
 #include <sys/time.h>
@@ -41,6 +42,7 @@ static void release_run(void)
   assert(rc == MAX_HISTORY);
   for (index=0; runs[index].running; index++);
 
+  release_sv(&(runs[index].cmd));
   while (++index < rc)
     runs[index-1] = runs[index];
   rc--;
@@ -69,13 +71,15 @@ static int find_run(pid_t pid)
   return -1;
 }
 
-static void start_run(pid_t pid, pid_t run_pid)
+static void start_run(pid_t pid, pid_t run_pid, sv *cmd)
 {
   int index = find_run(pid);
   assert(runs[index].running == false);
   assert(runs[index].done    == false);
   runs[index].run_pid = run_pid;
   runs[index].running = true;
+  runs[index].cmd = *cmd;
+  flatten_sv(&(runs[index].cmd));
 }
 
 static void end_run(pid_t pid)
@@ -97,11 +101,13 @@ void update_display(void)
   time_t    now;
   run       *rptr;
   proc      *pptr;
-  int       index;
+  int       index, row, col, x;
 
   now = time(NULL);
   mvprintw(0, 2, "Slaves online: %d", sc);
   mvprintw(0, 28, "%s", ctime(&now));
+
+  getmaxyx(stdscr, row, col);
 
   for (index=1; index<rc; index++) {
     rptr = runs+index;
@@ -115,11 +121,15 @@ void update_display(void)
     ltime = localtime(&(pptr->start_time));
     strftime(start, sizeof (start), "%T", ltime);
 
-    mvprintw(index+1, 2, "%c %5d  %s  %s",
-             pptr->state, rptr->run_pid, start, utime);
+    move(index+1, 0);
+    printw("%c %5d ", pptr->state, rptr->run_pid);
+    printw("%s %s  ", start, utime);
+    addnstr(rptr->cmd.buffer, col-25);
+    for (x=25+strlen(rptr->cmd.buffer); x<col; x++)
+      addch(' ');
     attroff(A_REVERSE);
   }
-  move(MAX_HISTORY+2, 0);
+  move(row-1, col-1);
   refresh();
 }
 
@@ -127,6 +137,7 @@ int main(int argc, char *argv[])
 {
   int            master_fd, op;
   pid_t          slv_pid, run_pid;
+  sv             cmd;
   fd_set         readfds;
   struct timeval tout;
 
@@ -144,7 +155,7 @@ int main(int argc, char *argv[])
     FD_SET(master_fd, &readfds);
     gettimeofday(&tout, NULL);
     tout.tv_sec = 0;
-    tout.tv_usec = 1000000-tout.tv_usec;
+    tout.tv_usec = 1050000-tout.tv_usec;
 
     if (select(master_fd+1, &readfds, NULL, NULL, &tout) < 0)
       err(4, "select");
@@ -162,7 +173,8 @@ int main(int argc, char *argv[])
     case 1:
       init_run(slv_pid);
       readn(master_fd, &run_pid, sizeof (pid_t));
-      start_run(slv_pid, run_pid);
+      read_sv(master_fd, &cmd);
+      start_run(slv_pid, run_pid, &cmd);
       break;
     case 2:
       end_run(slv_pid);

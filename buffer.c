@@ -1,5 +1,6 @@
-// Time-stamp: <2009-02-09 00:42:19 cklin>
+// Time-stamp: <2009-02-23 21:48:23 cklin>
 
+#include <assert.h>
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,17 +44,36 @@ char *xstrdup(const char *s)
   return dup;
 }
 
+void release_sv(sv *sv)
+{
+  free(sv->buffer);
+  free(sv->svec);
+  sv->buffer = NULL;
+  sv->svec = NULL;
+}
+
 void release_job(job *job)
 {
   free(job->cwd);
-  free(job->cmd.buffer);
-  free(job->cmd.svec);
-  free(job->env.buffer);
-  free(job->env.svec);
-
   job->cwd = NULL;
-  job->cmd.buffer = NULL;
-  job->cmd.svec = NULL;
-  job->env.buffer = NULL;
-  job->env.svec = NULL;
+  release_sv(&(job->cmd));
+  release_sv(&(job->env));
+}
+
+void flatten_sv(sv *sv)
+{
+  char *vp, *bp;
+  int  index;
+
+  assert(sv->buffer != NULL && sv->svec != NULL);
+  assert(sv->svec[0] == sv->buffer);
+
+  for (index=0, bp=sv->buffer; sv->svec[index]; index++) {
+    vp = sv->svec[index];
+    while (*vp)  *(bp++) = *(vp++);
+    *(bp++) = ' ';
+  }
+  *(--bp) = '\0';
+  free(sv->svec);
+  sv->svec = NULL;
 }

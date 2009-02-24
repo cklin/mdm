@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 17:49:00 cklin>
+// Time-stamp: <2009-02-23 21:34:59 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -141,6 +141,7 @@ static void issue(slave *slv)
   write_int(mon_fd, 1);
   write_pid(mon_fd, slv->pid);
   write_pid(mon_fd, slv->run_pid);
+  write_sv(mon_fd, slv->job.cmd.svec);
 }
 
 static void issue_ack(int slave_index)

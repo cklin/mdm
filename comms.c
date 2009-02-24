@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-07 08:56:37 cklin>
+// Time-stamp: <2009-02-23 21:33:06 cklin>
 
 #include <err.h>
 #include <string.h>
@@ -43,7 +43,7 @@ static int unpack_svec(sv *sv, int size)
 
 // Read string vector from file descriptor
 
-static int read_sv(int fd, sv *sv)
+int read_sv(int fd, sv *sv)
 {
   int size, count;
 
@@ -68,7 +68,7 @@ static int write_string(int fd, const char buffer[])
 
 // Write NULL-terminated string vector to file descriptor
 
-static int write_sv(int fd, char *const svec[])
+int write_sv(int fd, char *const svec[])
 {
   int index, size;
 
