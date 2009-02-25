@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 15:41:03 cklin>
+// Time-stamp: <2009-02-24 16:27:19 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -194,6 +194,8 @@ static bool iterate_usage(sv *cmd, char **ar, char *au)
   static char   *name, *base;
   static char   *opt, **ptr, *nul = "";
   static iospec *ios;
+  static bool   fixed, initial;
+  char          *spec;
 
   if (cmd) {
     free(name);
@@ -203,9 +205,31 @@ static bool iterate_usage(sv *cmd, char **ar, char *au)
     ios = find_iospec(base);
     opt = nul;
     ptr = cmd->svec;
+    fixed = true;
+    initial = true;
+    if (ios)  iterate_spec(ios, NULL);
     return false;
   }
+  assert(ar && au);
+
+  if (fixed) {
+    *ar = "global";
+    *au = 'R';
+    fixed = false;
+    return true;
+  }
+
   if (ios == NULL)  return false;
+
+  if (initial) {
+    while (iterate_spec(NULL, &spec))
+      if (spec[1] != '-' && spec[1] != '\0') {
+        *ar = spec+1;
+        *au = *spec;
+        return true;
+      }
+    initial = false;
+  }
 
   while (*(++ptr))
     if (**ptr != '-') {
@@ -216,7 +240,6 @@ static bool iterate_usage(sv *cmd, char **ar, char *au)
         *au = usage;
         return true;
       }
-      opt = nul;
     }
     else opt = *ptr;
 
@@ -228,6 +251,7 @@ bool validate_job(sv *cmd)
 {
   char *res, usage;
 
+  assert(cmd->buffer);
   iterate_usage(cmd, NULL, NULL);
   while (iterate_usage(NULL, &res, &usage))
     if (check_conflict(usage, res))
@@ -239,6 +263,7 @@ void register_job(sv *cmd)
 {
   char *res, usage;
 
+  assert(cmd->buffer);
   iterate_usage(cmd, NULL, NULL);
   while (iterate_usage(NULL, &res, &usage))
     add_uti(usage, res);
@@ -248,6 +273,7 @@ void unregister_job(sv *cmd)
 {
   char *res, usage;
 
+  assert(cmd->buffer);
   iterate_usage(cmd, NULL, NULL);
   while (iterate_usage(NULL, &res, &usage))
     del_uti(usage, res);

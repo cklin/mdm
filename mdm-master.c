@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 23:34:40 cklin>
+// Time-stamp: <2009-02-24 16:25:24 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -104,7 +104,8 @@ static int init_fetch(void)
 static int slave_wait(slave *slv)
 {
   slv->idle = true;
-  unregister_job(&slv->job.cmd);
+  if (slv != slaves)
+    unregister_job(&slv->job.cmd);
   return readn(slv->issue_fd, &(slv->status), sizeof (int));
 }
 
