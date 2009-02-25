@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 16:27:19 cklin>
+// Time-stamp: <2009-02-24 16:29:53 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -151,7 +151,7 @@ static bool check_conflict(char usage, const char *name)
   return false;
 }
 
-static void add_uti(char usage, const char *name)
+static void add_utilization(char usage, const char *name)
 {
   int index;
 
@@ -173,7 +173,7 @@ static void add_uti(char usage, const char *name)
   }
 }
 
-static void del_uti(char usage, const char *name)
+static void del_utilization(char usage, const char *name)
 {
   int index;
 
@@ -266,7 +266,7 @@ void register_job(sv *cmd)
   assert(cmd->buffer);
   iterate_usage(cmd, NULL, NULL);
   while (iterate_usage(NULL, &res, &usage))
-    add_uti(usage, res);
+    add_utilization(usage, res);
 }
 
 void unregister_job(sv *cmd)
@@ -276,5 +276,5 @@ void unregister_job(sv *cmd)
   assert(cmd->buffer);
   iterate_usage(cmd, NULL, NULL);
   while (iterate_usage(NULL, &res, &usage))
-    del_uti(usage, res);
+    del_utilization(usage, res);
 }
