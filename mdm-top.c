@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 15:27:51 cklin>
+// Time-stamp: <2009-02-24 18:44:24 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -35,7 +35,7 @@ typedef struct {
 } run;
 
 static run runs[MAX_HISTORY];
-static int rc, sc;
+static int rc, sc, ac;
 
 static void release_run(void)
 {
@@ -81,8 +81,9 @@ static void start_run(pid_t pid)
   assert(index == rc-1);
   assert(runs[index].running == false);
   assert(runs[index].done    == false);
-  runs[index].pid = pid;
+  runs[index].pid     = pid;
   runs[index].running = true;
+  ac++;
 }
 
 static void end_run(pid_t pid)
@@ -92,9 +93,10 @@ static void end_run(pid_t pid)
 
   assert(rptr->running == true);
   assert(rptr->done    == false);
-  rptr->running = false;
-  rptr->done    = true;
+  rptr->running  = false;
+  rptr->done     = true;
   rptr->pc.state = ' ';
+  ac--;
 }
 
 void update_display(void)
@@ -107,7 +109,7 @@ void update_display(void)
   int       index, row, col, y, x;
 
   now = time(NULL);
-  mvprintw(0, 2, "Slaves online: %d", sc);
+  mvprintw(0, 2, "Active Jobs: %2d/%2d", ac, sc);
   mvprintw(0, 28, "%s", ctime(&now));
 
   getmaxyx(stdscr, row, col);
