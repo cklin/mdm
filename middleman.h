@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-23 23:55:19 cklin>
+// Time-stamp: <2009-02-28 10:42:43 cklin>
 
 #ifndef __COMMS_H__
 #define __COMMS_H__
@@ -16,6 +16,13 @@
 #define ISSUE_SOCK    "issue"
 #define MON_SOCK      "monitor"
 #define LOG_FILE      "messages"
+
+#define TOP_OP_EXIT     0
+#define TOP_OP_FETCH    1
+#define TOP_OP_ISSUE    2
+#define TOP_OP_DONE     3
+#define TOP_OP_ONLINE   10
+#define TOP_OP_OFFLINE  11
 
 typedef struct {
   char *buffer;

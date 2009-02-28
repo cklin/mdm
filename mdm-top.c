@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 18:44:24 cklin>
+// Time-stamp: <2009-02-28 10:42:27 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -190,25 +190,25 @@ int main(int argc, char *argv[])
     if (!FD_ISSET(master_fd, &readfds))
       continue;
     readn(master_fd, &op, sizeof (int));
-    if (op == 0)  break;
+    if (op == TOP_OP_EXIT)  break;
 
     switch (op) {
-    case 1:
+    case TOP_OP_FETCH:
       read_sv(master_fd, &cmd);
       init_run(&cmd);
       break;
-    case 2:
+    case TOP_OP_ISSUE:
       readn(master_fd, &run_pid, sizeof (pid_t));
       start_run(run_pid);
       break;
-    case 3:
+    case TOP_OP_DONE:
       readn(master_fd, &run_pid, sizeof (pid_t));
       end_run(run_pid);
       break;
-    case 10:
+    case TOP_OP_ONLINE:
       sc++;
       break;
-    case 11:
+    case TOP_OP_OFFLINE:
       sc--;
       break;
     default:

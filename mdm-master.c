@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-24 16:25:24 cklin>
+// Time-stamp: <2009-02-28 10:43:03 cklin>
 
 #include <assert.h>
 #include <err.h>
@@ -124,7 +124,7 @@ static void fetch(int fetch_fd)
   if (opcode == 1) {
     read_job(run_fd, &job_pending);
     pending = true;
-    write_int(mon_fd, 1);
+    write_int(mon_fd, TOP_OP_FETCH);
     write_sv(mon_fd, job_pending.cmd.svec);
     return;
   }
@@ -150,7 +150,7 @@ static void issue_ack(int slave_index)
   issue(slv);
   pending = false;
 
-  write_int(mon_fd, 2);
+  write_int(mon_fd, TOP_OP_ISSUE);
   write_pid(mon_fd, slv->run_pid);
 
   write_int(run_fd, slv->status);
@@ -170,7 +170,7 @@ static void process_tick(void)
         }
       }
       else if (wind_down) {
-        write_int(mon_fd, 11);
+        write_int(mon_fd, TOP_OP_OFFLINE);
         slave_exit(index, true);
       }
     }
@@ -227,10 +227,10 @@ int main(int argc, char *argv[])
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (slave_wait(slv) > 0) {
-          write_int(mon_fd, 3);
+          write_int(mon_fd, TOP_OP_DONE);
           write_pid(mon_fd, slv->run_pid);
         } else {
-          write_int(mon_fd, 11);
+          write_int(mon_fd, TOP_OP_OFFLINE);
           slave_exit(slave_index, false);
         }
       }
@@ -238,12 +238,12 @@ int main(int argc, char *argv[])
 
     if (FD_ISSET(issue_fd, &readfds)) {
       slave_init(serv_accept(issue_fd));
-      write_int(mon_fd, 10);
+      write_int(mon_fd, TOP_OP_ONLINE);
     }
     process_tick();
   }
 
   write_int(slaves->issue_fd, 0);
-  write_int(mon_fd, 0);
+  write_int(mon_fd, TOP_OP_EXIT);
   return 0;
 }
