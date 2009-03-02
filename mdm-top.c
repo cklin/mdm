@@ -1,4 +1,22 @@
-// Time-stamp: <2009-02-28 10:42:27 cklin>
+// Time-stamp: <2009-03-02 15:07:47 cklin>
+
+/*
+   mdm-top.c - Middleman System Monitoring Utility
+
+   Copyright 2009 Chuan-kai Lin
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
 
 #include <assert.h>
 #include <err.h>
@@ -32,6 +50,7 @@ typedef struct {
   proc  pc;
   pid_t pid;
   bool  running, done;
+  int   status;
 } run;
 
 static run runs[MAX_HISTORY];
@@ -86,16 +105,20 @@ static void start_run(pid_t pid)
   ac++;
 }
 
-static void end_run(pid_t pid)
+static void end_run(pid_t pid, int status)
 {
   int index = find_run(pid);
   run *rptr = runs+index;
+
+  if (status > 255)
+    status = 255;
 
   assert(rptr->running == true);
   assert(rptr->done    == false);
   rptr->running  = false;
   rptr->done     = true;
   rptr->pc.state = ' ';
+  rptr->status   = status;
   ac--;
 }
 
@@ -132,15 +155,18 @@ void update_display(void)
       ltime = localtime(&(pptr->start_time));
       strftime(start, sizeof (start), "%T", ltime);
       printw("%s %5d ", start, rptr->pid);
-      printw("%c %s  ", pptr->state, utime);
+      if (rptr->running)
+        printw("  %c %s  ", pptr->state, utime);
+      else
+        printw("%3d %s  ", rptr->status, utime);
     }
     else {
       addstr("       -     - ");
-      addstr("      -   ");
+      addstr("        -   ");
     }
 
-    addnstr(rptr->cmd.buffer, col-25);
-    for (x=25+strlen(rptr->cmd.buffer); x<col; x++)
+    addnstr(rptr->cmd.buffer, col-27);
+    for (x=27+strlen(rptr->cmd.buffer); x<col; x++)
       addch(' ');
     attroff(A_REVERSE);
   }
@@ -157,7 +183,7 @@ void sig_winch(int sig)
 
 int main(int argc, char *argv[])
 {
-  int            master_fd, op;
+  int            master_fd, op, status;
   pid_t          run_pid;
   sv             cmd;
   fd_set         readfds;
@@ -203,7 +229,8 @@ int main(int argc, char *argv[])
       break;
     case TOP_OP_DONE:
       readn(master_fd, &run_pid, sizeof (pid_t));
-      end_run(run_pid);
+      readn(master_fd, &status, sizeof (pid_t));
+      end_run(run_pid, status);
       break;
     case TOP_OP_ONLINE:
       sc++;

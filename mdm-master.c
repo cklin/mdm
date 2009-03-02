@@ -1,4 +1,22 @@
-// Time-stamp: <2009-02-28 10:43:03 cklin>
+// Time-stamp: <2009-03-02 15:01:26 cklin>
+
+/*
+   mdm-master.c - Middleman System Main Controller
+
+   Copyright 2009 Chuan-kai Lin
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
 
 #include <assert.h>
 #include <err.h>
@@ -229,6 +247,7 @@ int main(int argc, char *argv[])
         if (slave_wait(slv) > 0) {
           write_int(mon_fd, TOP_OP_DONE);
           write_pid(mon_fd, slv->run_pid);
+          write_int(mon_fd, slv->status);
         } else {
           write_int(mon_fd, TOP_OP_OFFLINE);
           slave_exit(slave_index, false);
