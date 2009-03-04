@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-02 15:01:26 cklin>
+// Time-stamp: <2009-03-04 13:37:51 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -179,19 +179,21 @@ static void process_tick(void)
 {
   int index;
 
-  for (index=sc-1; index>0; index--)
-    if (slaves[index].idle) {
-      if (pending) {
+  if (pending)
+    for (index=1; index<sc; index++)
+      if (slaves[index].idle)
         if (validate_job(&job_pending.cmd)) {
           register_job(&job_pending.cmd);
           issue_ack(index);
+          break;
         }
-      }
-      else if (wind_down) {
+
+  if (wind_down)
+    for (index=sc-1; index>0; index--)
+      if (slaves[index].idle) {
         write_int(mon_fd, TOP_OP_OFFLINE);
         slave_exit(index, true);
       }
-    }
 }
 
 static void run_main(int issue_fd, char *argv[])
