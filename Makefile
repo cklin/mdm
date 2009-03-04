@@ -1,13 +1,23 @@
-# Time-stamp: <2009-02-23 17:17:46 cklin>
+# Time-stamp: <2009-03-03 18:20:40 cklin>
 
 CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
-CFLAGS := -Wall -D_GNU_SOURCE
-OBJS := comms.o buffer.o socket.o hazard.o procfs.o
+CFLAGS := -Wall -D_GNU_SOURCE -Iinclude
 
-all:		mdm-slave mdm-master mdm-run mdm-top
-mdm-slave:	mdm-slave.c $(OBJS)
-mdm-master:	mdm-master.c $(OBJS)
-mdm-run:	mdm-run.c $(OBJS)
-mdm-top:	LDFLAGS = -lcurses
-mdm-top:	mdm-top.c $(OBJS)
-.PHONY:		all
+LIB := $(patsubst %.c,%.o,$(wildcard library/*.c))
+PROG := $(patsubst programs/%.c,%,$(wildcard programs/*.c))
+
+all : $(PROG)
+
+$(LIB) : include/middleman.h
+mdm-top : LDFLAGS=-lcurses
+
+mdm-% : programs/mdm-%.c $(LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $+
+
+clean :
+	$(RM) library/*.o
+
+dist-clean : clean
+	$(RM) mdm-*
+
+.PHONY : all clean dist-clean
