@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-04 13:30:44 cklin>
+// Time-stamp: <2009-03-04 13:41:18 cklin>
 
 /*
    mdm-slave.c - Middleman System Job Runner
@@ -78,13 +78,13 @@ int main(int argc, char *argv[])
 
     pid = fork();
     if (pid == 0) {
+      screen_title("Process %u", getpid());
       close(master_fd);
       chdir(job.cwd);
       environ = job.env.svec;
       execvp(job.cmd.svec[0], job.cmd.svec);
     }
 
-    screen_title("Process %u", pid);
     write_pid(master_fd, pid);
     wait(&status);
     write_int(master_fd, status);
