@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:30:27 cklin>
+// Time-stamp: <2009-03-04 13:52:53 cklin>
 
 /*
    hazard.c - Job Interference Decision Procedures
@@ -139,8 +139,11 @@ static char calc_usage(const char *opt, iospec *ios)
 
   iterate_spec(ios, NULL);
   while (iterate_spec(NULL, &cp))
-    if (strcmp(opt, cp+1) == 0)
+    if (strcmp(opt, cp+1) == 0) {
+      if (*cp == '0' && *opt == '-')
+        return calc_usage("", ios);
       return *cp;
+    }
   return '-';
 }
 
