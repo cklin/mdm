@@ -18,19 +18,42 @@
 
 export PATH=$PATH:MDM_LIB
 
+iospec=/dev/null
+slaves=6
+
+function usage {
+    name=`basename $0`
+    echo >&2 "usage: $name [-c iospec] [-n slaves] cmd ..."
+    exit 1
+}
+
+while getopts c:n: OPTION
+do case $OPTION in
+        c) iospec="$OPTARG" ;;
+        n) slaves="$OPTARG"
+            if [ $slaves -lt 1 ]
+            then echo >&2 "error: must have at least 1 slave"
+                 exit 2
+            fi ;;
+        [?]) usage
+    esac
+done
+shift $[OPTIND-1]
+
+[ $# -eq 0 ] && usage
+
+function write_screenrc {
+    echo screen mdm-top $TMPFILE
+    while [ $slaves -ge 0 ]
+    do echo screen mdm-slave $TMPFILE
+       slaves=$[slaves-1]
+    done
+    echo select 0
+}
+
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
-cat <<EOF >> "$TMPFILE/screenrc"
-screen mdm-top "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-screen mdm-slave "$TMPFILE"
-select 0
-EOF
-mdm-master "$TMPFILE" "$@"
-screen -c "$TMPFILE/screenrc"
-cat "$TMPFILE/messages"
-rm -Rf "$TMPFILE"
+write_screenrc > $TMPFILE/screenrc
+mdm-master $TMPFILE "$iospec" "$@"
+screen -c $TMPFILE/screenrc
+cat $TMPFILE/messages
+rm -Rf $TMPFILE
