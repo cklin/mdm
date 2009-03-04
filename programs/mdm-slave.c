@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:32:01 cklin>
+// Time-stamp: <2009-03-04 13:30:44 cklin>
 
 /*
    mdm-slave.c - Middleman System Job Runner
@@ -20,6 +20,7 @@
 
 #include <err.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -43,6 +44,19 @@ static int hookup(const char *sockdir)
   return master_fd;
 }
 
+void screen_title(const char *format, ...)
+{
+  va_list argp;
+
+  if (isatty(STDIN_FILENO)) {
+    va_start(argp, format);
+    printf("\ek");
+    vprintf(format, argp);
+    printf("\e\\\n");
+    va_end(argp);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   job   job;
@@ -54,13 +68,12 @@ int main(int argc, char *argv[])
 
   master_fd = hookup(argv[1]);
   write_pid(master_fd, getpid());
-  if (isatty(STDIN_FILENO))
-    printf("\ek%s\e\\\n", ttyname(STDIN_FILENO));
 
   for ( ; ; ) {
+    screen_title("Idle");
+
     readn(master_fd, &op, sizeof (int));
     if (op == 0)  break;
-
     read_job(master_fd, &job);
 
     pid = fork();
@@ -71,6 +84,7 @@ int main(int argc, char *argv[])
       execvp(job.cmd.svec[0], job.cmd.svec);
     }
 
+    screen_title("Process %u", pid);
     write_pid(master_fd, pid);
     wait(&status);
     write_int(master_fd, status);
