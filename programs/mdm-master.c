@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-04 13:37:51 cklin>
+// Time-stamp: <2009-03-04 14:22:40 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -127,7 +127,7 @@ static int slave_wait(slave *slv)
   return readn(slv->issue_fd, &(slv->status), sizeof (int));
 }
 
-static bool wind_down, pending;
+static bool wind_down, pending, sync_mode;
 static job  job_pending;
 static int  run_fd;
 
@@ -138,15 +138,24 @@ static void fetch(int fetch_fd)
   assert(!pending);
   run_fd = serv_accept(fetch_fd);
   readn(run_fd, &opcode, sizeof (int));
+  pending = true;
 
-  if (opcode == 1) {
+  switch (opcode) {
+  case 1:
+    sync_mode = false;
     read_job(run_fd, &job_pending);
-    pending = true;
     write_int(mon_fd, TOP_OP_FETCH);
     write_sv(mon_fd, job_pending.cmd.svec);
-    return;
+    break;
+  case 2:
+    sync_mode = true;
+    read_job(run_fd, &job_pending);
+    break;
+  default:
+    warnx("Unknown mdm-run opcode %d", opcode);
+    pending = false;
+    break;
   }
-  warnx("Unknown mdm-run opcode %d", opcode);
 }
 
 static void issue(slave *slv)
@@ -178,6 +187,13 @@ static void issue_ack(int slave_index)
 static void process_tick(void)
 {
   int index;
+
+  if (pending && sync_mode)
+    if (validate_job(&job_pending.cmd)) {
+      pending = false;
+      write_int(run_fd, 0);
+      close(run_fd);
+    }
 
   if (pending)
     for (index=1; index<sc; index++)

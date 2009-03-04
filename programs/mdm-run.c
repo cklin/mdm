@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:31:36 cklin>
+// Time-stamp: <2009-03-04 14:35:17 cklin>
 
 /*
    mdm-run.c - Middleman System Job Proxy
@@ -21,6 +21,7 @@
 #include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "middleman.h"
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
 {
   struct stat sock_stat;
   char        *master_addr;
+  bool        sync_mode;
   int         master_fd, status;
   job         job;
 
@@ -53,11 +55,19 @@ int main(int argc, char *argv[])
   if (master_fd < 0)
     errx(6, "%s: cli_conn error", master_addr);
 
-  write_int(master_fd, 1);
+  sync_mode = !strcmp(basename(*argv), "mdm-sync");
+  write_int(master_fd, sync_mode ? 2 : 1);
+
   job.cwd = get_current_dir_name();
   job.cmd.svec = ++argv;
   job.env.svec = environ;
   write_job(master_fd, &job);
+  readn(master_fd, &status, sizeof (int));
+
+  if (sync_mode)
+    if (execvp(*argv, argv) < 0)
+      errx(2, "execve: %s", *argv);
+
   readn(master_fd, &status, sizeof (int));
   close(master_fd);
 
