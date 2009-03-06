@@ -24,6 +24,18 @@ ncurses library.  It should be easy to port to other Unix systems by
 writing new /proc parsers and fixing some library incompatibilities.
 
 
+BUILDING AND INSTALLING MDM
+===========================
+
+To build mdm, simply run "make" at the toplevel.  This project is simple
+enough so that there is no need for autoconf and automake.  To install,
+use "make install" as follows:
+
+    $ make install PREFIX=/install/directory/prefix
+
+Without the PREFIX override, "make install" installs mdm to /usr/local.
+
+
 HOW DOES IT WORK?
 =================
 
