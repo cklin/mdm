@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-02 15:07:47 cklin>
+// Time-stamp: <2009-03-05 22:44:23 cklin>
 
 /*
    mdm-top.c - Middleman System Monitoring Utility
@@ -137,7 +137,8 @@ void update_display(void)
 
   getmaxyx(stdscr, row, col);
 
-  for (index=0, y=2; index<rc; index++) {
+  mvaddstr(2, 3, "START   PID  ST   CPU   COMMAND");
+  for (index=0, y=3; index<rc; index++) {
     if (row-y <= rc-index && !rptr->running)
       continue;
     rptr = runs+index;
