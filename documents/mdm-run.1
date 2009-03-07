@@ -1,0 +1,102 @@
+.TH MDM-RUN 1 "2009-03-06" Linux "User Commands"
+
+.SH NAME
+mdm-run \- run a command in parallel with mdm-master
+
+.SH SYNOPSIS
+.B mdm-run
+.I command
+.br
+.B mdm-sync
+.I command
+
+.SH DESCRIPTION
+.B mdm-run
+annotates
+.I command
+as a candidate for parallel execution.
+If an
+.B mdm-master
+process is present (i.e., the environment variable
+.B MDM_CMD_SOCK
+is defined),
+.B mdm-run
+submits
+.I command
+to the
+.BR mdm-master ,
+and it exits when the master issues the
+.I command
+to an
+.B mdm-slave
+process (which may be connected to another terminal) for execution.
+.B mdm-sync
+runs
+.I command
+in place, but it coordinates with
+.B mdm-master
+to ensure that executing
+.I command
+does not interfere with commands that are currently executing in parallel.
+
+If there is no
+.B mdm-master
+process present (i.e., the environment variable
+.B MDM_CMD_SOCK
+is not defined), both
+.B mdm-run
+and
+.B mdm-sync
+simply run
+.I command
+as if you entered
+.I command
+all by itself.
+
+These programs are a part of the Middleman System (mdm).
+
+.SH OPTIONS
+Neither
+.B mdm-run
+nor
+.B mdm-sync
+accepts any options.
+
+.SH EXIT STATUS
+If there is no
+.B mdm-master
+process present, the exit status of
+.B mdm-run
+is the exit status of
+.IR command .
+If an
+.B mdm-master
+process is present,
+the exit status is 0 if and only if
+.I command
+is successfully issued to an
+.B mdm-slave
+process for execution.
+
+The exit status of
+.B mdm-sync
+is always the exit status of
+.IR command .
+
+.SH ENVIRONMENT
+The mdm system uses the following environment variable for internal
+communication, and thus you should not try to set them yourself.
+.IP MDM_CMD_SOCK
+.B mdm-run
+uses this environment variable to decide whether a
+.B mdm-master
+process is present.
+
+.SH EXAMPLE
+See
+.BR mdm.screen (1)
+for an example use of
+.BR mdm-run .
+
+.SH SEE ALSO
+.BR mdm.screen (1)

@@ -1,0 +1,135 @@
+.TH MDM.SCREEN 1 "2009-03-06" Linux "User Commands"
+
+.SH NAME
+mdm.screen \- run a command under mdm-master
+
+.SH SYNOPSIS
+.B mdm.screen
+.RI [ "-c iospec" ]
+.RI [ "-n slaves" ]
+.I command
+
+.SH DESCRIPTION
+.B mdm.screen
+runs
+.I command
+under
+.B mdm-master
+so that
+.B mdm-run
+commands in
+.I command
+can run in parallel.
+
+This program is a part of the Middleman System (mdm).
+
+.SH OPTIONS
+The
+.B mdm.screen
+command has two optional options.
+
+.TP
+.I -c iospec
+The iospec file (see below).
+
+.TP
+.I -n slaves
+The number of
+.B mdm-slave
+process to start (default 6).
+
+.SH THE IOSPEC FILE
+.B mdm-master
+uses the
+.I iospec
+file to decide whether two commands interfere with each other, and it
+only runs two commands at the same time if they do not interfere.
+
+Each line of the
+.I iospec
+file specifies the I/O behavior of a program, unless the line starts
+with a '#' character, in which case the line is treated as comments and
+ignored.
+The format is as follows:
+
+.IP
+.I program spec spec ...
+
+.P
+.I program
+names the program whose behavior you are specifying.
+For each
+.I spec
+element, the first character indicates
+.IR usage ,
+and the remaining characters indicate
+.IR resource .
+
+A
+.I resource
+that starts with a '-' character represents the argument of the
+corresponding program option.
+A
+.I resource
+that is an empty string represents a program argument.
+A
+.I resource
+that is not empty and does not start with a '-' character represents the
+.I resource
+string itself.
+
+A
+.I usage
+is typically an upper-case character.
+If two commands access the same resource with different
+.IR usage ,
+.B mdm-master
+will not run these two commands at the same time.
+Furthermore, if a command access a resource with \'W\'
+.IR usage ,
+.B mdm-master
+will not run it with any command that access the same resource in any
+way (including 'W').
+There is a special case: if
+.I usage
+is '0' and
+.I resource
+starts with a '-' character,
+it means that the
+.I resource
+program option does not take any arguments.
+
+All programs has an implicit
+.IR spec " 'Rglobal',"
+so if you mark a program as 'Wglobal', it will not run while any other
+command is running.
+
+
+.SH EXIT STATUS
+The exit status of
+.B mdm.screen
+is 0.
+
+.SH EXAMPLE
+Here is what you do to decompress all files with .gz extension in the
+current directory tree.
+
+.IP
+mdm.screen find . -iname '*.gz' -exec mdm-run gunzip {} \\;
+
+.P
+Since we run
+.B find
+under
+.B mdm.screen
+and invoking
+.B gunzip
+under
+.BR mdm-run ,
+we specify that we wish to run the
+.B gunzip
+commands in parallel.
+
+
+.SH SEE ALSO
+.BR mdm-run "(1), " mdm-sync (1)
