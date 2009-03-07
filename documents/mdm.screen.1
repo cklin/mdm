@@ -104,6 +104,43 @@ All programs has an implicit
 so if you mark a program as 'Wglobal', it will not run while any other
 command is running.
 
+Here is an example to help clarify matters.
+Suppose we have the following iospec file:
+
+.IP
+cc W-o 0-c R
+.br
+rm W
+
+.P
+Then these two commands
+.B can
+run at the same time:
+
+.IP
+cc -o pa pa.o lib.o
+.br
+cc -o pb pb.o lib.o
+
+.P
+These two commands
+.B cannot
+run at the same time:
+
+.IP
+cc -o pa.o -c pa.c
+.br
+cc -o pa pa.o lib.o
+
+.P
+And these two commands also
+.B cannot
+run at the same time:
+
+.IP
+cc -o pa pa.o lib.o
+.br
+rm pa
 
 .SH EXIT STATUS
 The exit status of
@@ -129,7 +166,6 @@ under
 we specify that we wish to run the
 .B gunzip
 commands in parallel.
-
 
 .SH SEE ALSO
 .BR mdm-run "(1), " mdm-sync (1)
