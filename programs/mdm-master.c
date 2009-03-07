@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-04 14:22:40 cklin>
+// Time-stamp: <2009-03-06 23:27:01 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -31,7 +31,7 @@
 
 typedef struct {
   job   job;
-  int   issue_fd, status;
+  int   issue_fd;
   pid_t pid, run_pid;
   bool  idle;
 } slave;
@@ -50,7 +50,6 @@ static void bump_maxfd(int fd)
 static void slave_init(int fd)
 {
   assert(sc < sizeof (slaves));
-  slaves[sc].status = 0;
   slaves[sc].issue_fd = fd;
   readn(fd, &(slaves[sc].pid), sizeof (pid_t));
   slaves[sc].idle = true;
@@ -119,12 +118,12 @@ static int init_fetch(void)
   return fetch_fd;
 }
 
-static int slave_wait(slave *slv)
+static int slave_wait(slave *slv, int *stp)
 {
   slv->idle = true;
   if (slv != slaves)
     unregister_job(&slv->job.cmd);
-  return readn(slv->issue_fd, &(slv->status), sizeof (int));
+  return readn(slv->issue_fd, stp, sizeof (int));
 }
 
 static bool wind_down, pending, sync_mode;
@@ -180,7 +179,7 @@ static void issue_ack(int slave_index)
   write_int(mon_fd, TOP_OP_ISSUE);
   write_pid(mon_fd, slv->run_pid);
 
-  write_int(run_fd, slv->status);
+  write_int(run_fd, 0);
   close(run_fd);
 }
 
@@ -225,7 +224,7 @@ static void run_main(int issue_fd, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  int   issue_fd, fetch_fd;
+  int   issue_fd, fetch_fd, status;
   int   slave_index;
 
   if (argc < 4)
@@ -255,17 +254,17 @@ int main(int argc, char *argv[])
     if (FD_ISSET(fetch_fd, &readfds))
       fetch(fetch_fd);
     if (FD_ISSET(slaves->issue_fd, &readfds)) {
-      slave_wait(slaves);
+      slave_wait(slaves, &status);
       wind_down = true;
     }
 
     for (slave_index=sc-1; slave_index>0; slave_index--) {
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
-        if (slave_wait(slv) > 0) {
+        if (slave_wait(slv, &status) > 0) {
           write_int(mon_fd, TOP_OP_DONE);
           write_pid(mon_fd, slv->run_pid);
-          write_int(mon_fd, slv->status);
+          write_int(mon_fd, status);
         } else {
           write_int(mon_fd, TOP_OP_OFFLINE);
           slave_exit(slave_index, false);
