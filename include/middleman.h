@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:32:25 cklin>
+// Time-stamp: <2009-03-08 15:58:00 cklin>
 
 /*
    middleman.h - Middleman System Header File
@@ -39,6 +39,7 @@
 #define TOP_OP_FETCH    1
 #define TOP_OP_ISSUE    2
 #define TOP_OP_DONE     3
+#define TOP_OP_ATTN     4
 #define TOP_OP_ONLINE   10
 #define TOP_OP_OFFLINE  11
 

@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-05 22:44:23 cklin>
+// Time-stamp: <2009-03-08 16:28:40 cklin>
 
 /*
    mdm-top.c - Middleman System Monitoring Utility
@@ -45,11 +45,16 @@ static int hookup(const char *sockdir)
   return master_fd;
 }
 
+#define STAGE_FETCH  300
+#define STAGE_ISSUE  301
+#define STAGE_DONE   302
+#define STAGE_ATTN   303
+
 typedef struct {
   sv    cmd;
   proc  pc;
   pid_t pid;
-  bool  running, done;
+  int   stage;
   int   status;
 } run;
 
@@ -61,7 +66,7 @@ static void release_run(void)
   int index;
 
   assert(rc == MAX_HISTORY);
-  for (index=0; runs[index].running; index++);
+  for (index=0; runs[index].stage != STAGE_DONE; index++);
 
   release_sv(&(runs[index].cmd));
   while (++index < rc)
@@ -75,8 +80,7 @@ static void init_run(sv *cmd)
     release_run();
 
   runs[rc].pid = 0;
-  runs[rc].running = false;
-  runs[rc].done = false;
+  runs[rc].stage = STAGE_FETCH;
   runs[rc].cmd = *cmd;
   flatten_sv(&(runs[rc].cmd));
   rc++;
@@ -87,7 +91,8 @@ static int find_run(pid_t pid)
   int index;
 
   for (index=0; index<rc; index++)
-    if (runs[index].pid == pid && !runs[index].done)
+    if (runs[index].pid == pid &&
+        runs[index].stage != STAGE_DONE)
       return index;
 
   errx(3, "Cannot find run with pid %d", pid);
@@ -98,10 +103,9 @@ static void start_run(pid_t pid)
 {
   int index = find_run(0);
   assert(index == rc-1);
-  assert(runs[index].running == false);
-  assert(runs[index].done    == false);
-  runs[index].pid     = pid;
-  runs[index].running = true;
+  assert(runs[index].stage == STAGE_FETCH);
+  runs[index].pid   = pid;
+  runs[index].stage = STAGE_ISSUE;
   ac++;
 }
 
@@ -113,13 +117,22 @@ static void end_run(pid_t pid, int status)
   if (status > 255)
     status = 255;
 
-  assert(rptr->running == true);
-  assert(rptr->done    == false);
-  rptr->running  = false;
-  rptr->done     = true;
-  rptr->pc.state = ' ';
-  rptr->status   = status;
-  ac--;
+  switch (rptr->stage) {
+  case STAGE_ISSUE:
+    ac--;
+    rptr->status   = status;
+    rptr->pc.state = ' ';
+    if (status) {
+      rptr-> stage = STAGE_ATTN;
+      break;
+    }
+  case STAGE_ATTN:
+    assert(status == 0);
+    rptr->stage = STAGE_DONE;
+    break;
+  default:
+    errx(6, "Job stage error (%d)", rptr->stage);
+  }
 }
 
 void update_display(void)
@@ -139,24 +152,26 @@ void update_display(void)
 
   mvaddstr(2, 3, "START   PID  ST   CPU   COMMAND");
   for (index=0, y=3; index<rc; index++) {
-    if (row-y <= rc-index && !rptr->running)
+    if (row-y <= rc-index && rptr->stage == STAGE_DONE)
       continue;
     rptr = runs+index;
     pptr = &(rptr->pc);
 
-    if (rptr->running) {
+    if (rptr->stage == STAGE_ISSUE) {
       pptr->state = '!';
       proc_stat(rptr->pid, pptr);
       attron(A_REVERSE);
     }
+    if (rptr->stage == STAGE_ATTN)
+      attron(A_BLINK);
 
     move(y++, 0);
-    if (rptr->running || rptr->done) {
+    if (rptr->stage != STAGE_FETCH) {
       utime = time_string(pptr->utime);
       ltime = localtime(&(pptr->start_time));
       strftime(start, sizeof (start), "%T", ltime);
       printw("%s %5d ", start, rptr->pid);
-      if (rptr->running)
+      if (rptr->stage == STAGE_ISSUE)
         printw("  %c %s  ", pptr->state, utime);
       else
         printw("%3d %s  ", rptr->status, utime);
@@ -170,6 +185,7 @@ void update_display(void)
     for (x=27+strlen(rptr->cmd.buffer); x<col; x++)
       addch(' ');
     attroff(A_REVERSE);
+    attroff(A_BLINK);
   }
   move(0, col-1);
   refresh();
@@ -229,6 +245,10 @@ int main(int argc, char *argv[])
       start_run(run_pid);
       break;
     case TOP_OP_DONE:
+      readn(master_fd, &run_pid, sizeof (pid_t));
+      end_run(run_pid, 0);
+      break;
+    case TOP_OP_ATTN:
       readn(master_fd, &run_pid, sizeof (pid_t));
       readn(master_fd, &status, sizeof (pid_t));
       end_run(run_pid, status);

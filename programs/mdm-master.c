@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-06 23:27:01 cklin>
+// Time-stamp: <2009-03-08 16:43:32 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -120,10 +120,14 @@ static int init_fetch(void)
 
 static int slave_wait(slave *slv, int *stp)
 {
-  slv->idle = true;
-  if (slv != slaves)
-    unregister_job(&slv->job.cmd);
-  return readn(slv->issue_fd, stp, sizeof (int));
+  ssize_t n = readn(slv->issue_fd, stp, sizeof (int));
+
+  if (n && *stp == 0) {
+    if (slv != slaves)
+      unregister_job(&slv->job.cmd);
+    slv->idle = true;
+  }
+  return n;
 }
 
 static bool wind_down, pending, sync_mode;
@@ -262,9 +266,15 @@ int main(int argc, char *argv[])
       slave *slv = &slaves[slave_index];
       if (FD_ISSET(slv->issue_fd, &readfds)) {
         if (slave_wait(slv, &status) > 0) {
-          write_int(mon_fd, TOP_OP_DONE);
-          write_pid(mon_fd, slv->run_pid);
-          write_int(mon_fd, status);
+          if (status) {
+            write_int(mon_fd, TOP_OP_ATTN);
+            write_pid(mon_fd, slv->run_pid);
+            write_int(mon_fd, status);
+          }
+          else {
+            write_int(mon_fd, TOP_OP_DONE);
+            write_pid(mon_fd, slv->run_pid);
+          }
         } else {
           write_int(mon_fd, TOP_OP_OFFLINE);
           slave_exit(slave_index, false);
