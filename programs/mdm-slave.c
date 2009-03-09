@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 17:00:35 cklin>
+// Time-stamp: <2009-03-08 17:12:19 cklin>
 
 /*
    mdm-slave.c - Middleman System Job Runner
@@ -64,8 +64,8 @@ static void wait_user_ack(pid_t pid, sv *sv, int status)
 
   screen_title("Process %5u ATTN", pid);
   flatten_sv(sv);
-  puts(sv->buffer);
-  printf("Exit status %u: Press ENTER...", status);
+  printf("\n%s", sv->buffer);
+  printf("\nExit status %u: Press ENTER... ", status);
   if (getline(&buffer, &n, stdin) < 0)
     warn("getline");
   free(buffer);
