@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 17:09:01 cklin>
+// Time-stamp: <2009-03-09 00:31:30 cklin>
 
 /*
    mdm-top.c - Middleman System Monitoring Utility
@@ -91,9 +91,8 @@ static int find_run(pid_t pid)
 {
   int index;
 
-  for (index=0; index<rc; index++)
-    if (runs[index].pid == pid &&
-        runs[index].stage != STAGE_DONE)
+  for (index=rc-1; index>=0; index--)
+    if (runs[index].pid == pid)
       return index;
 
   errx(3, "Cannot find run with pid %d", pid);
@@ -102,8 +101,8 @@ static int find_run(pid_t pid)
 
 static void start_run(pid_t pid, pid_t run_pid)
 {
-  int index = find_run(0);
-  assert(index == rc-1);
+  int index = rc-1;
+  assert(rc > 0);
   assert(runs[index].stage == STAGE_FETCH);
   runs[index].pid     = pid;
   runs[index].run_pid = run_pid;
