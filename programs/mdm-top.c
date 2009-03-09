@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 16:28:40 cklin>
+// Time-stamp: <2009-03-08 17:09:01 cklin>
 
 /*
    mdm-top.c - Middleman System Monitoring Utility
@@ -53,7 +53,7 @@ static int hookup(const char *sockdir)
 typedef struct {
   sv    cmd;
   proc  pc;
-  pid_t pid;
+  pid_t pid, run_pid;
   int   stage;
   int   status;
 } run;
@@ -80,6 +80,7 @@ static void init_run(sv *cmd)
     release_run();
 
   runs[rc].pid = 0;
+  runs[rc].run_pid = 0;
   runs[rc].stage = STAGE_FETCH;
   runs[rc].cmd = *cmd;
   flatten_sv(&(runs[rc].cmd));
@@ -99,13 +100,14 @@ static int find_run(pid_t pid)
   return -1;
 }
 
-static void start_run(pid_t pid)
+static void start_run(pid_t pid, pid_t run_pid)
 {
   int index = find_run(0);
   assert(index == rc-1);
   assert(runs[index].stage == STAGE_FETCH);
-  runs[index].pid   = pid;
-  runs[index].stage = STAGE_ISSUE;
+  runs[index].pid     = pid;
+  runs[index].run_pid = run_pid;
+  runs[index].stage   = STAGE_ISSUE;
   ac++;
 }
 
@@ -159,7 +161,7 @@ void update_display(void)
 
     if (rptr->stage == STAGE_ISSUE) {
       pptr->state = '!';
-      proc_stat(rptr->pid, pptr);
+      proc_stat(rptr->run_pid, pptr);
       attron(A_REVERSE);
     }
     if (rptr->stage == STAGE_ATTN)
@@ -170,7 +172,7 @@ void update_display(void)
       utime = time_string(pptr->utime);
       ltime = localtime(&(pptr->start_time));
       strftime(start, sizeof (start), "%T", ltime);
-      printw("%s %5d ", start, rptr->pid);
+      printw("%s %5d ", start, rptr->run_pid);
       if (rptr->stage == STAGE_ISSUE)
         printw("  %c %s  ", pptr->state, utime);
       else
@@ -201,7 +203,7 @@ void sig_winch(int sig)
 int main(int argc, char *argv[])
 {
   int            master_fd, op, status;
-  pid_t          run_pid;
+  pid_t          pid, run_pid;
   sv             cmd;
   fd_set         readfds;
   struct timeval tout;
@@ -241,8 +243,9 @@ int main(int argc, char *argv[])
       init_run(&cmd);
       break;
     case TOP_OP_ISSUE:
+      readn(master_fd, &pid, sizeof (pid_t));
       readn(master_fd, &run_pid, sizeof (pid_t));
-      start_run(run_pid);
+      start_run(pid, run_pid);
       break;
     case TOP_OP_DONE:
       readn(master_fd, &run_pid, sizeof (pid_t));

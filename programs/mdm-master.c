@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 16:43:32 cklin>
+// Time-stamp: <2009-03-08 17:05:23 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -181,6 +181,7 @@ static void issue_ack(int slave_index)
   pending = false;
 
   write_int(mon_fd, TOP_OP_ISSUE);
+  write_pid(mon_fd, slv->pid);
   write_pid(mon_fd, slv->run_pid);
 
   write_int(run_fd, 0);
@@ -268,12 +269,12 @@ int main(int argc, char *argv[])
         if (slave_wait(slv, &status) > 0) {
           if (status) {
             write_int(mon_fd, TOP_OP_ATTN);
-            write_pid(mon_fd, slv->run_pid);
+            write_pid(mon_fd, slv->pid);
             write_int(mon_fd, status);
           }
           else {
             write_int(mon_fd, TOP_OP_DONE);
-            write_pid(mon_fd, slv->run_pid);
+            write_pid(mon_fd, slv->pid);
           }
         } else {
           write_int(mon_fd, TOP_OP_OFFLINE);
