@@ -1,4 +1,4 @@
-# Time-stamp: <2009-03-06 23:44:39 cklin>
+# Time-stamp: <2009-03-09 00:33:24 cklin>
 
 CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
 CFLAGS := -Wall -D_GNU_SOURCE -Iinclude
@@ -27,6 +27,7 @@ mdm-% : programs/mdm-%.c $(LIB)
 
 LIB += library/hazard.o library/procfs.o
 $(LIB) : include/middleman.h
+$(PROG) : include/middleman.h
 
 install : install-bin install-docs
 
