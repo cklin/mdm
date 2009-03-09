@@ -1,4 +1,4 @@
-# Time-stamp: <2009-03-09 00:33:53 cklin>
+# Time-stamp: <2009-03-09 00:35:55 cklin>
 
 CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
 CFLAGS := -Wall -D_GNU_SOURCE -Iinclude
@@ -55,4 +55,4 @@ clean :
 dist-clean : clean
 	$(RM) mdm-*
 
-.PHONY : all install clean dist-clean
+.PHONY : all install install-bin install-docs clean dist-clean
