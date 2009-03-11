@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  mdm-top.c - Middleman System Monitoring Utility
+#  mdm.screen - Middleman top-level script (uses screen)
 #
 #  Copyright 2009 Chuan-kai Lin
 #
