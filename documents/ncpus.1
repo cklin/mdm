@@ -1,0 +1,42 @@
+.TH NCPUS 1 "2009-03-10" Linux "User Commands"
+
+.SH NAME
+ncpus \- print the number of virtual CPUs
+
+.SH SYNOPSIS
+.B ncpus [
+.I +n
+|
+.I n
+|
+.I -n
+]
+
+.SH DESCRIPTION
+.B ncpus
+prints the number of virtual CPUs to standard output.  With the
+.I +n
+argument, it prints the number of processors +n; with the
+.I -n
+argument, it prints the number of processors -n (if the result is less
+than 1,
+.B ncpus
+prints 1).
+With the
+.I n
+argument,
+.B ncpus
+prints
+.IR n .
+.B ncpus
+ignores malformed argument.
+
+This program is a part of the Middleman System (mdm).
+
+.SH EXIT STATUS
+The exit status of
+.B ncpus
+is 0.
+
+.SH SEE ALSO
+.BR mdm.screen (1)
