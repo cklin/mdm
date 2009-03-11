@@ -1,4 +1,4 @@
-# Time-stamp: <2009-03-10 20:24:30 cklin>
+# Time-stamp: <2009-03-10 23:37:17 cklin>
 
 CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
 CFLAGS := -Wall -D_GNU_SOURCE -Iinclude
@@ -29,33 +29,34 @@ LIB += library/hazard.o library/procfs.o
 $(LIB) : include/middleman.h
 $(PROG) : include/middleman.h
 
+MAN := $(wildcard documents/*.1)
+HTML := $(patsubst %,%.html,$(MAN))
+
+%.1.html : %.1
+	rman -f html -r '%s.%s.html' $+ > $@
+
+man-html : $(HTML)
+
 install : install-bin install-docs
 
 install-bin : all 
 	$(INSTALL) -d $(BIN_DIR) $(LIB_DIR)
-	$(INSTALL) scripts/mdm.screen $(BIN_DIR)
-	$(INSTALL) scripts/ncpus $(BIN_DIR)
+	$(INSTALL) scripts/mdm.screen scripts/ncpus $(BIN_DIR)
 	$(INSTALL) -s mdm-run $(BIN_DIR)
 	$(LN) -f -s mdm-run $(BIN_DIR)/mdm-sync
-	$(INSTALL) -s mdm-master $(LIB_DIR)
-	$(INSTALL) -s mdm-slave $(LIB_DIR)
-	$(INSTALL) -s mdm-top $(LIB_DIR)
+	$(INSTALL) -s mdm-master mdm-slave mdm-top $(LIB_DIR)
 	$(SED) -i -e "s:MDM_LIB:$(LIB_DIR):" $(BIN_DIR)/mdm.screen
 
 install-docs :
 	$(INSTALL) -d $(MAN_DIR)
-	$(INSTALL) -m 644 documents/mdm.screen.1 $(MAN_DIR)
-	$(INSTALL) -m 644 documents/mdm-run.1 $(MAN_DIR)
-	$(INSTALL) -m 644 documents/ncpus.1 $(MAN_DIR)
-	$(GZIP) -f -9 $(MAN_DIR)/mdm.screen.1
-	$(GZIP) -f -9 $(MAN_DIR)/mdm-run.1
-	$(GZIP) -f -9 $(MAN_DIR)/ncpus.1
+	$(INSTALL) -m 644 $(MAN) $(MAN_DIR)
+	$(GZIP) -f -9 $(patsubst documents/%,$(MAN_DIR)/%,$(MAN))
 	$(LN) -f -s mdm-run.1.gz $(MAN_DIR)/mdm-sync.1.gz
 
 clean :
 	$(RM) library/*.o
 
 dist-clean : clean
-	$(RM) mdm-*
+	$(RM) mdm-* documents/*.html
 
-.PHONY : all install install-bin install-docs clean dist-clean
+.PHONY : all man-html install install-bin install-docs clean dist-clean
