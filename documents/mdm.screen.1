@@ -28,12 +28,10 @@ The
 .B mdm.screen
 command has two optional options.
 
-.TP
-.I -c iospec
+.IP "-c iospec"
 The iospec file (see below).
 
-.TP
-.I -n slaves
+.IP "-n slaves"
 The number of
 .B mdm-slave
 process to start (default 6).
@@ -52,8 +50,9 @@ with a '#' character, in which case the line is treated as comments and
 ignored.
 The format is as follows:
 
-.IP
+.RS
 .I program spec spec ...
+.RE
 
 .P
 .I program
@@ -107,40 +106,44 @@ command is running.
 Here is an example to help clarify matters.
 Suppose we have the following iospec file:
 
-.IP
+.RS
 cc W-o 0-c R
 .br
 rm W
+.RE
 
 .P
 Then these two commands
 .B can
 run at the same time:
 
-.IP
+.RS
 cc -o pa pa.o lib.o
 .br
 cc -o pb pb.o lib.o
+.RE
 
 .P
 These two commands
 .B cannot
 run at the same time:
 
-.IP
+.RS
 cc -o pa.o -c pa.c
 .br
 cc -o pa pa.o lib.o
+.RE
 
 .P
 And these two commands also
 .B cannot
 run at the same time:
 
-.IP
+.RS
 cc -o pa pa.o lib.o
 .br
 rm pa
+.RE
 
 .SH EXIT STATUS
 The exit status of
@@ -151,8 +154,9 @@ is 0.
 Here is what you do to decompress all files with .gz extension in the
 current directory tree.
 
-.IP
+.RS
 mdm.screen find . -iname '*.gz' -exec mdm-run gunzip {} \\;
+.RE
 
 .P
 Since we run
