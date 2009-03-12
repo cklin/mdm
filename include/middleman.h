@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 15:58:00 cklin>
+// Time-stamp: <2009-03-11 22:01:39 cklin>
 
 /*
    middleman.h - Middleman System Header File
@@ -56,6 +56,9 @@ typedef struct {
 int serv_listen(const char *name);
 int serv_accept(int listenfd);
 int cli_conn(const char *name);
+
+int send_fd(int sockfd, int fd);
+int recv_fd(int sockfd);
 
 void check_sockdir(const char *path);
 

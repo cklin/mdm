@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:33:18 cklin>
+// Time-stamp: <2009-03-11 22:14:47 cklin>
 
 /*
    socket.c - Middleman System Socket Procedures
@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include "middleman.h"
 
 // Advanced Programming in the Unix Environment, Program 15.22
 
@@ -151,6 +152,79 @@ ssize_t writen(int fd, const void *vptr, size_t n)
     ptr += written;
   }
   return n;
+}
+
+// Advanced Programming in the Unix Environment, Program 15.9
+
+#define CONTROLLEN (sizeof (struct cmsghdr)+sizeof (int))
+
+static struct cmsghdr *cmptr = NULL;
+
+int send_fd(int sockfd, int fd)
+{
+  struct iovec   iov;
+  struct msghdr  msg;
+  char           ch;
+
+  ch              = 0;
+  iov.iov_base    = &ch;
+  iov.iov_len     = 1;
+  msg.msg_iov     = &iov;
+  msg.msg_iovlen  = 1;
+  msg.msg_name    = NULL;
+  msg.msg_namelen = 0;
+
+  if (!cmptr)  cmptr = xmalloc(CONTROLLEN);
+  cmptr->cmsg_level  = SOL_SOCKET;
+  cmptr->cmsg_type   = SCM_RIGHTS;
+  cmptr->cmsg_len    = CONTROLLEN;
+  msg.msg_control    = (caddr_t) cmptr;
+  msg.msg_controllen = CONTROLLEN;
+  *(int *) CMSG_DATA(cmptr) = fd;
+
+  if (sendmsg(sockfd, &msg, 0) != 1) {
+    warn("send_fd sendmsg");
+    return -1;
+  }
+  return 0;
+}
+
+// Advanced Programming in the Unix Environment, Program 15.10
+
+int recv_fd(int sockfd)
+{
+  struct cmsghdr *cmptr = NULL;
+  struct iovec   iov;
+  struct msghdr  msg;
+  char           ch;
+  int            nread;
+
+  iov.iov_base    = &ch;
+  iov.iov_len     = 1;
+  msg.msg_iov     = &iov;
+  msg.msg_iovlen  = 1;
+  msg.msg_name    = NULL;
+  msg.msg_namelen = 0;
+
+  if (!cmptr)  cmptr = xmalloc(CONTROLLEN);
+  msg.msg_control    = (caddr_t) cmptr;
+  msg.msg_controllen = CONTROLLEN;
+  nread = recvmsg(sockfd, &msg, 0);
+
+  if (nread < 0) {
+    warn("recv_fd recvmsg");
+    return -1;
+  }
+  if (nread == 0) {
+    warnx("recv_fd: connection closed by server");
+    return -2;
+  }
+  if (ch == 0)
+    if (msg.msg_controllen == CONTROLLEN)
+      return *(int *) CMSG_DATA(cmptr);
+
+  warnx("recv_fd: protocol error");
+  return -3;
 }
 
 // Write a scalar value to a file descriptor
