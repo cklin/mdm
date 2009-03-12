@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-04 14:35:17 cklin>
+// Time-stamp: <2009-03-11 22:42:20 cklin>
 
 /*
    mdm-run.c - Middleman System Job Proxy
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   sync_mode = !strcmp(basename(*argv), "mdm-sync");
   write_int(master_fd, sync_mode ? 2 : 1);
 
-  job.cwd = get_current_dir_name();
+  job.cwd = open(".", O_RDONLY);
   job.cmd.svec = ++argv;
   job.env.svec = environ;
   write_job(master_fd, &job);

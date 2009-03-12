@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:29:07 cklin>
+// Time-stamp: <2009-03-11 22:48:46 cklin>
 
 /*
    buffer.c - Middleman System String and Buffer Procedures
@@ -72,8 +72,6 @@ void release_sv(sv *sv)
 
 void release_job(job *job)
 {
-  free(job->cwd);
-  job->cwd = NULL;
   release_sv(&(job->cmd));
   release_sv(&(job->env));
 }

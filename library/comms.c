@@ -1,4 +1,4 @@
-// Time-stamp: <2009-02-28 11:29:41 cklin>
+// Time-stamp: <2009-03-11 22:49:55 cklin>
 
 /*
    comms.c - Middleman System Communications Procedures
@@ -74,7 +74,7 @@ int read_sv(int fd, sv *sv)
 
 // Write zero-terminated string with size to file descriptor
 
-static int write_string(int fd, const char buffer[])
+int write_string(int fd, const char buffer[])
 {
   int size;
 
@@ -101,14 +101,14 @@ int write_sv(int fd, char *const svec[])
 
 void read_job(int fd, job *job)
 {
-  read_block(fd, &(job->cwd));
+  readn(fd, &(job->cwd), sizeof (int));
   read_sv(fd, &(job->cmd));
   read_sv(fd, &(job->env));
 }
 
 void write_job(int fd, const job *job)
 {
-  write_string(fd, job->cwd);
+  write_int(fd, job->cwd);
   write_sv(fd, job->cmd.svec);
   write_sv(fd, job->env.svec);
 }

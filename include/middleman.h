@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-11 22:01:39 cklin>
+// Time-stamp: <2009-03-11 22:40:13 cklin>
 
 /*
    middleman.h - Middleman System Header File
@@ -50,7 +50,7 @@ typedef struct {
 
 typedef struct {
   sv   cmd, env;
-  char *cwd;
+  int  cwd;
 } job;
 
 int serv_listen(const char *name);

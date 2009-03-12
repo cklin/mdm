@@ -1,4 +1,4 @@
-// Time-stamp: <2009-03-08 17:05:23 cklin>
+// Time-stamp: <2009-03-11 22:46:32 cklin>
 
 /*
    mdm-master.c - Middleman System Main Controller
@@ -221,7 +221,7 @@ static void run_main(int issue_fd, char *argv[])
   assert(sc == 0);
   slave_init(serv_accept(issue_fd));
 
-  job_pending.cwd = get_current_dir_name();
+  job_pending.cwd = open(".", O_RDONLY);
   job_pending.cmd.svec = argv;
   job_pending.env.svec = environ;
   issue(slaves);
