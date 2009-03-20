@@ -1,8 +1,9 @@
-Version
+Version 0.1.2
 
  * Require user acknowledge parallel commands with non-zero exit status
  * Add ncpus(1) script which detects the number of processors/cores
  * Pass working directory as a file descriptor instead of as a string
+ * Make screen(1) start slaves (instead of shells) in new windows
 
 
 Version 0.1.1
