@@ -42,17 +42,27 @@ shift $[OPTIND-1]
 
 [ $# -eq 0 ] && usage
 
-function write_screenrc {
+function print_screenrc {
+    echo shell $TMPFILE/shell
     echo screen mdm-top $TMPFILE
     while [ $slaves -ge 0 ]
-    do echo screen mdm-slave $TMPFILE
+    do echo screen
        slaves=$[slaves-1]
     done
     echo select 0
 }
 
+function write_slave_proxy {
+    cat <<EOF > $TMPFILE/shell
+#!/bin/sh
+exec mdm-slave $TMPFILE
+EOF
+    chmod 700 $TMPFILE/shell
+}
+
 TMPFILE=`mktemp -d -t mdm-XXXXXXXXXX` || exit 1
-write_screenrc > $TMPFILE/screenrc
+print_screenrc > $TMPFILE/screenrc
+write_slave_proxy
 mdm-master $TMPFILE "$iospec" "$@"
 screen -c $TMPFILE/screenrc
 cat $TMPFILE/messages
