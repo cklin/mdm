@@ -1,4 +1,6 @@
 Version 0.1.2
+Fri Mar 20 00:57:59 2009 -0700
+http://hg.berlios.de/repos/mdm/rev/d7494b4db676
 
  * Require user acknowledge parallel commands with non-zero exit status
  * Add ncpus(1) script which detects the number of processors/cores
