@@ -16,7 +16,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-export PATH=$PATH:MDM_LIB
+export PATH=MDM_LIB:$PATH
 
 iospec=/dev/null
 slaves=6
