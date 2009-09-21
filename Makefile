@@ -1,4 +1,4 @@
-# Time-stamp: <2009-09-20 23:08:46 cklin>
+# Time-stamp: <2009-09-20 23:40:07 cklin>
 
 override CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
 override CFLAGS += -Wall -D_GNU_SOURCE -Iinclude
@@ -14,7 +14,7 @@ PROG := $(patsubst programs/%.c,%,$(wildcard programs/*.c))
 PREFIX ?= /usr/local
 BIN_DIR := $(PREFIX)/bin
 LIB_DIR := $(PREFIX)/lib/mdm
-MAN_DIR := $(PREFIX)/man/man1
+MAN_DIR := $(PREFIX)/share/man/man1
 
 all : $(PROG)
 
