@@ -1,7 +1,7 @@
-# Time-stamp: <2009-03-10 23:37:17 cklin>
+# Time-stamp: <2009-09-20 23:08:46 cklin>
 
-CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
-CFLAGS := -Wall -D_GNU_SOURCE -Iinclude
+override CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
+override CFLAGS += -Wall -D_GNU_SOURCE -Iinclude
 
 SED := /bin/sed
 INSTALL := /usr/bin/install
@@ -20,7 +20,7 @@ all : $(PROG)
 
 mdm-master : library/hazard.o
 mdm-top : library/procfs.o
-mdm-top : LDFLAGS=-lcurses
+mdm-top : override LDFLAGS += -lcurses
 
 mdm-% : programs/mdm-%.c $(LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $+
