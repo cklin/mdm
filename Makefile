@@ -1,4 +1,4 @@
-# Time-stamp: <2009-09-20 23:40:07 cklin>
+# Time-stamp: <2009-09-20 23:58:48 cklin>
 
 override CC := $(shell which mdm-run > /dev/null && echo mdm-run) $(CC)
 override CFLAGS += -Wall -D_GNU_SOURCE -Iinclude
@@ -15,6 +15,10 @@ PREFIX ?= /usr/local
 BIN_DIR := $(PREFIX)/bin
 LIB_DIR := $(PREFIX)/lib/mdm
 MAN_DIR := $(PREFIX)/share/man/man1
+
+BIN_D_DIR := $(DESTDIR)$(BIN_DIR)
+LIB_D_DIR := $(DESTDIR)$(LIB_DIR)
+MAN_D_DIR := $(DESTDIR)$(MAN_DIR)
 
 all : $(PROG)
 
@@ -40,18 +44,18 @@ man-html : $(HTML)
 install : install-bin install-docs
 
 install-bin : all 
-	$(INSTALL) -d $(BIN_DIR) $(LIB_DIR)
-	$(INSTALL) scripts/mdm.screen scripts/ncpus $(BIN_DIR)
-	$(INSTALL) -s mdm-run $(BIN_DIR)
-	$(LN) -f -s mdm-run $(BIN_DIR)/mdm-sync
-	$(INSTALL) -s mdm-master mdm-slave mdm-top $(LIB_DIR)
-	$(SED) -i -e "s:MDM_LIB:$(LIB_DIR):" $(BIN_DIR)/mdm.screen
+	$(INSTALL) -d $(BIN_D_DIR) $(LIB_D_DIR)
+	$(INSTALL) scripts/mdm.screen scripts/ncpus $(BIN_D_DIR)
+	$(INSTALL) -s mdm-run $(BIN_D_DIR)
+	$(LN) -f -s mdm-run $(BIN_D_DIR)/mdm-sync
+	$(INSTALL) -s mdm-master mdm-slave mdm-top $(LIB_D_DIR)
+	$(SED) -i -e "s:MDM_LIB:$(LIB_DIR):" $(BIN_D_DIR)/mdm.screen
 
 install-docs :
-	$(INSTALL) -d $(MAN_DIR)
-	$(INSTALL) -m 644 $(MAN) $(MAN_DIR)
-	$(GZIP) -f -9 $(patsubst documents/%,$(MAN_DIR)/%,$(MAN))
-	$(LN) -f -s mdm-run.1.gz $(MAN_DIR)/mdm-sync.1.gz
+	$(INSTALL) -d $(MAN_D_DIR)
+	$(INSTALL) -m 644 $(MAN) $(MAN_D_DIR)
+	$(GZIP) -f -9 $(patsubst documents/%,$(MAN_D_DIR)/%,$(MAN))
+	$(LN) -f -s mdm-run.1.gz $(MAN_D_DIR)/mdm-sync.1.gz
 
 clean :
 	$(RM) library/*.o
