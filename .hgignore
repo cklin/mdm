@@ -1,6 +1,0 @@
-syntax: glob
-*.o
-mdm-master
-mdm-run
-mdm-slave
-mdm-top
