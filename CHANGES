@@ -1,6 +1,6 @@
 Version 0.1.3
 Mon Sep 21 00:12:38 2009 -0700
-http://hg.berlios.de/repos/mdm/rev/097ac17e7888
+https://github.com/cklin/mdm/tree/4ddceff85e515b0325a26d5086ae4e76685ae888
 
  * Support CC, CFLAGS, LDFLAGS override in Makefile
  * Support DESTDIR in Makefile install targets
@@ -10,7 +10,7 @@ http://hg.berlios.de/repos/mdm/rev/097ac17e7888
 
 Version 0.1.2
 Fri Mar 20 00:57:59 2009 -0700
-http://hg.berlios.de/repos/mdm/rev/d7494b4db676
+https://github.com/cklin/mdm/tree/8af4154853b75446942d746f8e7fbf7c95e7e2d3
 
  * Require user acknowledge parallel commands with non-zero exit status
  * Add ncpus(1) script which detects the number of processors/cores
@@ -20,14 +20,14 @@ http://hg.berlios.de/repos/mdm/rev/d7494b4db676
 
 Version 0.1.1
 Fri Mar 06 23:54:18 2009 -0800
-http://hg.berlios.de/repos/mdm/rev/06f194232f2c
+https://github.com/cklin/mdm/tree/4921fde4ee76fe2dbdf499d727eec078b758ed77
 
  * Add manual pages for user commands
 
 
 Version 0.1.0
 Fri Mar 06 15:14:38 2009 -0800
-http://hg.berlios.de/repos/mdm/rev/d862df56868f
+https://github.com/cklin/mdm/tree/b99b6c969f77027e2f1e0ced489c7afea5e03ebe
 
  * Initial release
 
