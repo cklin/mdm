@@ -1,11 +1,7 @@
-THE MIDDLEMAN PROJECT
+The Middleman Project
 =====================
 
 http://github.com/cklin/mdm
-
-
-ABOUT THE PROJECT
-=================
 
 The Middleman Project (mdm) aims to create utility programs that unleash
 the power of multi-processor and multi-core computer systems.  It does
@@ -13,28 +9,29 @@ so by helping you parallelize your shell scripts, Makefiles, or any
 other program that invoke external programs.
 
 
-SOFTWARE REQUIREMENTS
-=====================
+Software requirements
+---------------------
 
-To run mdm, you need a modern (2.6+) Linux system, GNU screen and the
-ncurses library.  It should be easy to port to other Unix systems by
-writing new /proc parsers and fixing some library incompatibilities.
+To run mdm, you need a modern (2.6+) Linux system, GNU [screen][screen]
+and [ncurses library][ncurses].  It should be easy to port to other Unix
+systems by writing new `/proc` parsers and fixing any library
+incompatibilities.
 
 
-BUILDING AND INSTALLING MDM
-===========================
+Building and installing mdm
+---------------------------
 
-To build mdm, simply run "make" at the toplevel.  This project is simple
+To build mdm, simply run `make` at the toplevel.  This project is simple
 enough so that there is no need for autoconf and automake.  To install,
-use "make install" as follows:
+use `make install` as follows:
 
     $ make install PREFIX=/install/directory/prefix
 
-Without the PREFIX override, "make install" installs mdm to /usr/local.
+Without the `PREFIX` override, `make install` installs mdm to `/usr/local`.
 
 
-HOW DOES IT WORK?
-=================
+How does it work?
+-----------------
 
 The philosophy behind mdm is that users should benefit from their
 multi-core systems without making drastic changes to their shell
@@ -45,8 +42,8 @@ discovers parallelization opportunities and run the annotated commands
 in parallel as appropriate.
 
 
-MDM IN 3 EASY STEPS
-===================
+mdm in 3 easy steps
+-------------------
 
 Suppose you use the following shell script (encode.sh) for encoding your
 music library.  It works, but it leaves your quad-core computer mostly
@@ -63,25 +60,25 @@ You can parallelize this shell script in three easy steps.
  1. Find commands that you think are suitable for parallel execution,
     and annotate them with mdm-run.  Here is the modified encode.sh:
 
-    #!/bin/bash
-    for i in *.wav
-    do echo $i
-       mdm-run ffmpeg -i "$i" "${i%%.wav}.mp3"
-    done
+        #!/bin/bash
+        for i in *.wav
+        do echo $i
+           mdm-run ffmpeg -i "$i" "${i%%.wav}.mp3"
+        done
 
  2. Specify the I/O behavior of your parallel commands in an iospec
     file.  You know ffmpeg reads from its -i option argument and writes
     to its command argument (w/o option), so this is what you write in
     your iospec file:
 
-    ffmpeg R-i W
+        ffmpeg R-i W
 
     You can skip this step if you are certain the parallel command
     cannot interfere with any other command in the script.
 
  3. Run the script under mdm.screen as follows:
 
-    $ mdm.screen -c iospec encode.sh
+        $ mdm.screen -c iospec encode.sh
 
     You should see a monitoring program (mdm-top) displaying the
     execution status of your parallel commands, and the encoding process
@@ -89,21 +86,21 @@ You can parallelize this shell script in three easy steps.
     processing cores a good workout!
 
 
-WHEN NOT TO ANNOTATE WITH MDM-RUN
-=================================
+When not to annotate with mdm-run
+---------------------------------
 
-There are a few cases where you should not annotate a command with
-mdm-run.  They are:
+The mdm-run command runs executable programs asynchronously.  Therefore,
+there are a few cases where you should not annotate a command with mdm-run:
 
  1. The command is a shell built-in,
 
  2. You need to know the exit status of the command, or
 
- 3. You perform I/O redirection on the command
+ 3. You perform I/O redirection on the command.
 
 
-THE I/O SPECIFICATION FILE
-==========================
+The I/O specification file
+--------------------------
 
 The I/O specification file (iospec) specifies the I/O behavior of
 programs.  The mdm system use these specifications to decide whether it
@@ -117,15 +114,15 @@ the file describes a program.  Here are a few examples:
 
 In plain English:
 
-  * ffmpeg reads from the option argument of -i and writes to all its
+  * `ffmpeg` reads from the option argument of `-i` and writes to all its
     non-option arguments,
 
-  * rm writes to all its non-option arguments,
+  * `rm` writes to all its non-option arguments,
 
-  * cc writes to its -o argument, -c takes no arguments, reads from the
+  * `cc` writes to its `-o` argument, `-c` takes no arguments, reads from the
     (abstract) file "busy" and from its non-option arguments, and
 
-  * date writes to the (abstract) file "busy".
+  * `date` writes to the (abstract) file "busy".
 
 Adding the abstract file "busy" to the iospec ensures that mdm will
 never schedule the date command to run when any "cc" command is still
@@ -134,8 +131,8 @@ running (and vice versa).
 Beware that the iospec format is subject to change in the future.
 
 
-WHEN TO USE MDM-SYNC
-====================
+When to use mdm-sync
+--------------------
 
 The mdm-sync command is just like mdm-run, except that it does not
 submit the command for parallel execution.  Use mdm-sync to annotate a
@@ -143,13 +140,11 @@ command when you don't want it to run in parallel, but you think it
 might interfere with a command annotated by mdm-run.
 
 
-FOUND A BUG?
-============
+Found a bug?
+------------
 
-Please report bugs or issues through the GitHub mdm issue tracker
-(http://github.com/cklin/mdm/issues).
+Please report bugs through the [GitHub mdm issue tracker][tracker].
 
-
--- 
-Chuan-kai Lin <chklin@gmail.com>
-Sat Feb 11 14:22:23 PST 2012
+[screen]: http://www.gnu.org/software/screen/
+[ncurses]: http://www.gnu.org/software/ncurses/
+[tracker]: http://github.com/cklin/mdm/issues
